@@ -2,10 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { ElevenLabsClient } = require('@elevenlabs/elevenlabs-js'); // NEW: Official SDK
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize ElevenLabs with your new key
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_c7c89d2ae26a8ba8eb6763d1f2e3056e8a0dbdece18262ee";
+const elevenlabs = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
 
 const apiKeys = [
     process.env.GEMINI_KEY_1,
@@ -27,7 +32,7 @@ app.post('/api/explain-topic', async (req, res) => {
 
     async function tryGenerate(index) {
         if (index >= apiKeys.length) {
-            throw new Error("All API keys are exhausted. Please try again later.");
+            throw new Error("All API keys are exhausted.");
         }
 
         const currentIdx = (keyIndex + index) % apiKeys.length;
@@ -42,7 +47,6 @@ app.post('/api/explain-topic', async (req, res) => {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            // BULLETPROOF PROMPT: Removed Wikipedia traps.
             const prompt = `Act as a world-class educational mentor. Your name is Clarity.
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience.
             
@@ -53,9 +57,9 @@ app.post('/api/explain-topic', async (req, res) => {
             
             FOLLOWING SCENES (8-10 scenes total):
             - YOU ARE THE DIRECTOR. Choose the exact right medium for each scene:
-              - REALITY: For tangible objects, nature, or people, use "photo" and provide a simple 1-2 word Pexels search keyword. (Do NOT use Wikipedia or external URLs).
+              - REALITY: For tangible objects, nature, or people, use "photo" and provide a simple 1-2 word Pexels search keyword.
               - PROGRAMMING/CODE: If teaching programming, use "code" and provide the raw, perfectly formatted code snippet in media_data.
-              - THEORY/DIAGRAMS: For abstract concepts, math, or history where photos fail, use "svg" and provide raw SVG code.
+              - THEORY/DIAGRAMS: For abstract concepts, math, or history, use "svg" and provide raw SVG code.
             
             CRITICAL SVG SPATIAL RULES (NO OVERLAPPING):
             - Use viewBox="0 0 800 400".
@@ -126,6 +130,35 @@ app.post('/api/explain-topic', async (req, res) => {
     } catch (error) {
         console.error("Clarity System Error:", error.message);
         res.status(500).json({ error: "System failed to gain clarity. Please try again." });
+    }
+});
+
+// NEW: Robust SDK-powered TTS Endpoint
+app.post('/api/tts', async (req, res) => {
+    const { text } = req.body;
+    
+    try {
+        // Use the exact parameters from your example
+        const audioStream = await elevenlabs.textToSpeech.convert('JBFqnCBsd6RMkjVDRZzb', {
+            text: text,
+            model_id: 'eleven_multilingual_v2',
+            output_format: 'mp3_44100_128',
+        });
+
+        res.setHeader('Content-Type', 'audio/mpeg');
+        
+        // Convert the Web Stream into chunks and push them directly to the Express response
+        const reader = audioStream.getReader();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value); 
+        }
+        res.end(); // Close the connection once the audio file is fully sent
+
+    } catch (error) {
+        console.error("ElevenLabs SDK Error:", error);
+        res.status(500).json({ error: "Audio generation failed" });
     }
 });
 

@@ -20,9 +20,6 @@ let sceneTimeout = null;
 let currentTopic = ""; 
 let currentConfidence = ""; 
 
-// Pre-load voices for the browser
-window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-
 explainBtn.addEventListener('click', async () => {
     const topicInput = document.getElementById('topic-input');
     const difficultyInput = document.getElementById('difficulty-input'); 
@@ -103,31 +100,32 @@ async function playCurrentScene() {
     stopSpeech();
 
     if (isPlaying) {
-        await new Promise((resolve) => {
+        await new Promise(async (resolve) => {
             window.currentSpeechResolve = resolve;
             
-            if ('speechSynthesis' in window) {
-                // Bug fix: Cancel any stuck audio before playing new audio
-                window.speechSynthesis.cancel(); 
+            try {
+                // Fetch high-quality audio stream
+                const ttsResponse = await fetch('https://clarity-ai-dejg.onrender.com/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: scene.subtitle })
+                });
                 
-                const msg = new SpeechSynthesisUtterance(scene.subtitle);
-                const voices = window.speechSynthesis.getVoices();
+                if (!ttsResponse.ok) throw new Error("Audio SDK failed");
+
+                const blob = await ttsResponse.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                window.currentAudioObj = new Audio(audioUrl);
                 
-                // Prioritize Indian English, then UK English
-                const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
-                const ukVoice = voices.find(v => v.lang === 'en-GB' || v.name.includes('UK'));
+                window.currentAudioObj.play();
                 
-                msg.voice = indianVoice || ukVoice || voices[0];
-                msg.rate = 0.95; // Slightly slower for clarity
-                msg.pitch = 1.0;
-                
-                msg.onend = () => { if (window.currentSpeechResolve) resolve(); };
-                msg.onerror = () => { if (window.currentSpeechResolve) resolve(); }; // Continue even if audio fails
-                
-                window.speechSynthesis.speak(msg);
-            } else {
-                // Fallback if browser doesn't support TTS
-                setTimeout(() => { if (window.currentSpeechResolve) resolve(); }, 3500);
+                window.currentAudioObj.onend = () => {
+                    if (window.currentSpeechResolve) resolve();
+                };
+            } catch (err) {
+                console.error("Audio playback error:", err);
+                // Fallback: If ElevenLabs fails or runs out of credits, default back to text pacing
+                setTimeout(() => { if (window.currentSpeechResolve) resolve(); }, 4000);
             }
         });
 
@@ -139,13 +137,16 @@ async function playCurrentScene() {
                     currentSceneIndex++;
                     playCurrentScene();
                 }
-            }, 800); 
+            }, 600); 
         }
     }
 }
 
 function stopSpeech() {
-    window.speechSynthesis.cancel();
+    if (window.currentAudioObj) {
+        window.currentAudioObj.pause();
+        window.currentAudioObj.currentTime = 0;
+    }
     clearTimeout(sceneTimeout);
     if (window.currentSpeechResolve) {
         window.currentSpeechResolve();
