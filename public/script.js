@@ -19,13 +19,16 @@ let isPlaying = false;
 let sceneTimeout = null;
 let currentTopic = ""; 
 let currentConfidence = ""; 
+let currentLanguage = "English"; // NEW: Global language state
 
 explainBtn.addEventListener('click', async () => {
     const topicInput = document.getElementById('topic-input');
     const difficultyInput = document.getElementById('difficulty-input'); 
+    const languageInput = document.getElementById('language-input'); // Capture Language
     
     currentTopic = topicInput ? topicInput.value : "";
     const currentDifficulty = difficultyInput ? difficultyInput.value : "Intermediate";
+    currentLanguage = languageInput ? languageInput.value : "English";
     
     if(!currentTopic) return alert("Please enter a topic to begin your journey.");
 
@@ -40,7 +43,11 @@ explainBtn.addEventListener('click', async () => {
         const response = await fetch('https://clarity-ai-dejg.onrender.com/api/explain-topic', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ topic: currentTopic, level: currentDifficulty })
+            body: JSON.stringify({ 
+                topic: currentTopic, 
+                level: currentDifficulty,
+                language: currentLanguage // Send language to the backend
+            })
         });
         
         const data = await response.json();
@@ -64,6 +71,26 @@ function startLesson() {
     playbackControls.classList.remove('hidden');
     bgMusic.play().catch(e => console.log("Music blocked by browser autoplay rules."));
     playCurrentScene();
+}
+
+function stopSpeech() {
+    if (window.currentAudioObj) {
+        window.currentAudioObj.pause();
+        window.currentAudioObj.removeAttribute('src'); 
+        window.currentAudioObj.load(); 
+        window.currentAudioObj = null;
+    }
+    
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+    
+    clearTimeout(sceneTimeout);
+    
+    if (window.currentSpeechResolve) {
+        window.currentSpeechResolve();
+        window.currentSpeechResolve = null;
+    }
 }
 
 async function playCurrentScene() {
@@ -97,35 +124,54 @@ async function playCurrentScene() {
         }
     }
 
-    stopSpeech();
+    stopSpeech(); 
 
     if (isPlaying) {
         await new Promise(async (resolve) => {
             window.currentSpeechResolve = resolve;
             
             try {
-                // Fetch high-quality audio stream
                 const ttsResponse = await fetch('https://clarity-ai-dejg.onrender.com/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: scene.subtitle })
+                    // NEW: We now send both the text AND the chosen language to the audio engine
+                    body: JSON.stringify({ text: scene.subtitle, language: currentLanguage })
                 });
                 
                 if (!ttsResponse.ok) throw new Error("Audio SDK failed");
 
                 const blob = await ttsResponse.blob();
                 const audioUrl = URL.createObjectURL(blob);
+                
+                if (!isPlaying) return resolve(); 
+
                 window.currentAudioObj = new Audio(audioUrl);
                 
-                window.currentAudioObj.play();
+                window.currentAudioObj.play().catch(e => console.error("Play blocked:", e));
                 
                 window.currentAudioObj.onend = () => {
                     if (window.currentSpeechResolve) resolve();
                 };
             } catch (err) {
-                console.error("Audio playback error:", err);
-                // Fallback: If ElevenLabs fails or runs out of credits, default back to text pacing
-                setTimeout(() => { if (window.currentSpeechResolve) resolve(); }, 4000);
+                console.warn("Falling back to native browser TTS:", err.message);
+                
+                if ('speechSynthesis' in window && isPlaying) {
+                    window.speechSynthesis.cancel(); 
+                    const msg = new SpeechSynthesisUtterance(scene.subtitle);
+                    const voices = window.speechSynthesis.getVoices();
+                    
+                    // Basic fallback to local Indian voice if Cloud fails
+                    const indianVoice = voices.find(v => v.lang.includes('IN'));
+                    msg.voice = indianVoice || voices[0];
+                    msg.rate = 0.95; 
+                    
+                    msg.onend = () => { if (window.currentSpeechResolve) resolve(); };
+                    msg.onerror = () => { if (window.currentSpeechResolve) resolve(); }; 
+                    
+                    window.speechSynthesis.speak(msg);
+                } else {
+                    setTimeout(() => { if (window.currentSpeechResolve) resolve(); }, 3500);
+                }
             }
         });
 
@@ -137,20 +183,8 @@ async function playCurrentScene() {
                     currentSceneIndex++;
                     playCurrentScene();
                 }
-            }, 600); 
+            }, 200); 
         }
-    }
-}
-
-function stopSpeech() {
-    if (window.currentAudioObj) {
-        window.currentAudioObj.pause();
-        window.currentAudioObj.currentTime = 0;
-    }
-    clearTimeout(sceneTimeout);
-    if (window.currentSpeechResolve) {
-        window.currentSpeechResolve();
-        window.currentSpeechResolve = null;
     }
 }
 
@@ -201,6 +235,8 @@ function endLesson() {
     stopSpeech();
     isPlaying = false;
     bgMusic.pause();
+    
+    clearTimeout(sceneTimeout); 
     
     if (visualContainer) visualContainer.innerHTML = '';
     
