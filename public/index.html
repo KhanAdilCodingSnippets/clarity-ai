@@ -37,33 +37,29 @@
         ::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #b1b1b1; }
 
-        /* Unified styling for perfectly fitted media */
         #visual-container svg, #visual-container img {
             transition: all 0.5s ease;
             width: 100%;
             height: 100%;
             max-height: 450px;
-            object-fit: contain; /* Guarantees nothing is ever cut off */
+            object-fit: contain; 
         }
 
         #visual-container svg {
             filter: drop-shadow(0 10px 25px rgba(0,0,0,0.4));
         }
 
-        /* Cinematic Dark Theme for Video Stage */
         .video-frame {
-            background: #0a0a0a; /* Deep black for premium video feel */
+            background: #0a0a0a; 
             border: 1px solid #222;
         }
 
-        /* Perfect Subtitle Visibility */
         #subtitle-box {
             min-height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #ffffff; /* White text */
-            /* This creates a crisp, readable black stroke around the text */
+            color: #ffffff; 
             text-shadow: 
                 -2px -2px 0 #000,  
                  2px -2px 0 #000,
@@ -72,7 +68,6 @@
                  0px  6px 15px rgba(0,0,0,0.9);
         }
 
-        /* Lighten up the play controls so they are visible on black */
         #playback-controls button {
             color: #ffffff;
             opacity: 0.7;
@@ -86,76 +81,75 @@
 <body class="font-sans antialiased text-gray-900">
     <div class="infinite-bg"></div>
 
-    <div id="landing-area" class="h-screen flex flex-col items-center justify-center p-6 fade-in">
-        <h1 class="text-9xl font-black tracking-tighter mb-12 text-black select-none">Clarity.</h1>
+    <div id="landing-area" class="h-screen flex flex-col items-center justify-center p-4 md:p-6 fade-in">
+        <h1 class="text-6xl md:text-9xl font-black tracking-tighter mb-8 md:mb-12 text-black select-none">Clarity.</h1>
         <div class="flex flex-col items-center w-full max-w-2xl">
             <input id="topic-input" type="text" placeholder="What do you want to learn?" 
-            class="w-full text-2xl p-9 rounded-[2.5rem] border-none shadow-2xl focus:ring-8 focus:ring-blue-50 outline-none transition-all text-center mb-6 placeholder-gray-300">
+            class="w-full text-lg md:text-2xl p-6 md:p-9 rounded-[2rem] md:rounded-[2.5rem] border-none shadow-2xl focus:ring-8 focus:ring-blue-50 outline-none transition-all text-center mb-4 md:mb-6 placeholder-gray-300">
             
-            <select id="difficulty-input" class="w-full text-xl p-6 rounded-[2rem] border-none shadow-lg focus:ring-4 focus:ring-blue-50 outline-none transition-all text-center mb-10 text-gray-600 bg-white cursor-pointer appearance-none">
+            <select id="difficulty-input" class="w-full text-base md:text-xl p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-none shadow-lg focus:ring-4 focus:ring-blue-50 outline-none transition-all text-center mb-8 md:mb-10 text-gray-600 bg-white cursor-pointer appearance-none">
                 <option value="Beginner (Grade 5-8)">Beginner (Grade 5-8)</option>
                 <option value="Intermediate (Grade 9-12)" selected>Intermediate (Grade 9-12)</option>
                 <option value="Expert (University/Professional)">Expert (University & Beyond)</option>
             </select>
 
-            <button id="explain-btn" class="bg-black text-white px-16 py-6 rounded-full text-2xl font-bold hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl">
+            <button id="explain-btn" class="bg-black text-white px-10 py-4 md:px-16 md:py-6 rounded-full text-xl md:text-2xl font-bold hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl w-full md:w-auto">
                 START JOURNEY
             </button>
         </div>
     </div>
 
-    <div id="video-stage" class="hidden max-w-7xl mx-auto py-12 px-6 fade-in">
+    <div id="video-stage" class="hidden max-w-7xl mx-auto py-6 md:py-12 px-4 md:px-6 fade-in">
         
-        <div class="video-frame rounded-[4rem] shadow-2xl overflow-hidden aspect-video relative flex flex-col items-center justify-center p-12">
+        <div class="video-frame rounded-3xl md:rounded-[4rem] shadow-2xl overflow-hidden aspect-[4/3] md:aspect-video relative flex flex-col items-center justify-center p-4 md:p-12">
             
-            <div class="absolute top-10 left-0 w-full px-20">
+            <div class="absolute top-6 md:top-10 left-0 w-full px-8 md:px-20">
                 <div id="lesson-progress" class="h-1.5 bg-gray-800 rounded-full overflow-hidden">
                     <div id="progress-bar" class="h-full bg-white w-0 transition-all duration-700 ease-out"></div>
                 </div>
             </div>
 
-            <div id="visual-container" class="w-full h-3/4 flex items-center justify-center overflow-visible z-10">
+            <div id="visual-container" class="w-full h-1/2 md:h-3/4 flex items-center justify-center overflow-visible z-10 mt-8 md:mt-0">
             </div>
 
-            <div class="absolute bottom-28 w-full text-center px-16 z-20">
-                <div id="subtitle-box" class="text-4xl font-extrabold tracking-normal leading-tight">
+            <div class="absolute bottom-20 md:bottom-28 w-full text-center px-4 md:px-16 z-20">
+                <div id="subtitle-box" class="text-xl md:text-4xl font-extrabold tracking-normal leading-tight">
                     Preparing your clarity session...
                 </div>
             </div>
 
-            <div id="playback-controls" class="absolute bottom-8 w-full flex justify-center items-center gap-8 hidden z-30">
+            <div id="playback-controls" class="absolute bottom-4 md:bottom-8 w-full flex justify-center items-center gap-4 md:gap-8 hidden z-30">
                 <button onclick="prevScene()" class="p-2" title="Previous">
-                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                    <svg class="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                 </button>
-                <button onclick="togglePlay()" id="play-pause-btn" class="p-2 transform scale-125" title="Play/Pause">
-                    <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                <button onclick="togglePlay()" id="play-pause-btn" class="p-2 transform scale-110 md:scale-125" title="Play/Pause">
+                    <svg class="w-8 h-8 md:w-10 md:h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 </button>
                 <button onclick="nextScene()" class="p-2" title="Next">
-                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    <svg class="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                 </button>
-                <button onclick="replayLesson()" class="p-2 ml-6 border-l border-gray-600 pl-8" title="Replay Lesson">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                <button onclick="replayLesson()" class="p-2 ml-2 md:ml-6 border-l border-gray-600 pl-4 md:pl-8" title="Replay Lesson">
+                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
                 </button>
             </div>
         </div>
 
-        <div id="interaction-area" class="mt-24 hidden">
-            <nav class="flex justify-center gap-12 border-b border-gray-100 mb-16 text-sm font-bold tracking-widest text-gray-400 uppercase flex-wrap">
-                <button onclick="showTab('notes')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">Lesson Notes</button>
-                <button onclick="showTab('test')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">Practice Test</button>
-                <button onclick="showTab('debate')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">The Thought</button>
-                <button onclick="showTab('result')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black hidden" id="result-tab-btn">Evaluation</button>
+        <div id="interaction-area" class="mt-12 md:mt-24 hidden">
+            <nav class="flex justify-center gap-4 md:gap-12 border-b border-gray-100 mb-8 md:mb-16 text-xs md:text-sm font-bold tracking-widest text-gray-400 uppercase flex-wrap">
+                <button onclick="showTab('notes')" class="pb-4 md:pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">Lesson Notes</button>
+                <button onclick="showTab('test')" class="pb-4 md:pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">Practice Test</button>
+                <button onclick="showTab('debate')" class="pb-4 md:pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">The Thought</button>
+                <button onclick="showTab('result')" class="pb-4 md:pb-6 hover:text-black transition-colors focus:outline-none focus:text-black hidden" id="result-tab-btn">Evaluation</button>
             </nav>
 
             <div id="notes-content" class="tab-content fade-in max-w-5xl mx-auto"></div>
-            
             <div id="test-content" class="tab-content hidden fade-in"></div>
             <div id="debate-content" class="tab-content hidden fade-in"></div>
             <div id="result-content" class="tab-content hidden fade-in"></div>
         </div>
         
-        <footer class="mt-32 text-center pb-20">
-            <p class="text-gray-300 font-bold tracking-[0.3em] uppercase text-xs">A Product of Clarity AI</p>
+        <footer class="mt-20 md:mt-32 text-center pb-10 md:pb-20">
+            <p class="text-gray-300 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs">A Product of Clarity AI</p>
         </footer>
     </div>
 

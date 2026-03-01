@@ -26,7 +26,6 @@ app.use(express.json());
 app.use(express.static('public'));
 
 app.post('/api/explain-topic', async (req, res) => {
-    // Extracting both topic and the new pedagogical difficulty level
     const { topic, level } = req.body;
 
     async function tryGenerate(index) {
@@ -46,7 +45,6 @@ app.post('/api/explain-topic', async (req, res) => {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            // The Ultimate Clarity Prompt: Problem Statement Optimized
             const prompt = `Act as a world-class educational mentor. Your name is Clarity.
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience. You MUST adjust your vocabulary, depth of explanation, and complexity of examples to perfectly match this difficulty level.
             
@@ -61,10 +59,11 @@ app.post('/api/explain-topic', async (req, res) => {
               - REALITY: For tangible objects, specific people, places, or real-world events, use "photo" and provide a highly specific search keyword (e.g., "Steve Jobs portrait", "Indian farmer", "rocket launch").
               - THEORY/DIAGRAMS: For processes, math, code, or abstract systems, use "svg" and provide the raw SVG code.
             
-            CRITICAL SVG STYLING (DARK MODE):
-            - The video player background is SOLID BLACK (#0a0a0a).
-            - Any SVG you generate MUST use bright, vibrant, high-contrast colors (neon blue, bright green, yellow, bright white).
-            - NEVER use black text, dark lines, or dark shapes in your SVGs. Use viewBox="0 0 800 400".
+            CRITICAL SVG STYLING (CINEMATIC & READABLE):
+            - Base Canvas: Use viewBox="0 0 800 400". The video background is SOLID BLACK (#0a0a0a).
+            - Layering Rule: You MUST draw background shapes first, and text LAST so text is never hidden behind shapes.
+            - Typography & Alignment: Use font-family="system-ui, sans-serif". You MUST use text-anchor="middle" and precise x/y coordinates to perfectly center text inside shapes. Use large font sizes (e.g., font-size="24" or "32").
+            - Contrast Rule: If text is placed over a bright shape (like a yellow circle), the text MUST be a dark color (e.g., #0a0a0a). If text is placed directly on the black background, it MUST be bright white or neon. Keep designs ultra-minimalist and Apple-like.
             
             INTERACTIVE DATA & VERIFICATION:
             - "quiz": EXACTLY 6 multiple choice questions appropriate for the ${level} difficulty.
@@ -90,7 +89,6 @@ app.post('/api/explain-topic', async (req, res) => {
             
             let lessonData = JSON.parse(response.text());
 
-            // --- The Mixed-Media Engine ---
             for (let scene of lessonData.scenes) {
                 if (scene.media_type === "photo") {
                     try {
