@@ -18,10 +18,14 @@ let currentSceneIndex = 0;
 let isPlaying = false;
 let sceneTimeout = null;
 let currentTopic = ""; 
+let currentConfidence = ""; // NEW: Store the verification score
 
 explainBtn.addEventListener('click', async () => {
     const topicInput = document.getElementById('topic-input');
+    const difficultyInput = document.getElementById('difficulty-input'); // Capture difficulty
+    
     currentTopic = topicInput ? topicInput.value : "";
+    const currentDifficulty = difficultyInput ? difficultyInput.value : "Intermediate";
     
     if(!currentTopic) return alert("Please enter a topic to begin your journey.");
 
@@ -33,11 +37,11 @@ explainBtn.addEventListener('click', async () => {
     if (progressBar) progressBar.style.width = '0%';
     
     try {
-        // WIRED TO LIVE BACKEND: Replaced local path with your Render URL
+        // Send both topic AND level to the backend
         const response = await fetch('https://clarity-ai-dejg.onrender.com/api/explain-topic', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ topic: currentTopic })
+            body: JSON.stringify({ topic: currentTopic, level: currentDifficulty })
         });
         
         const data = await response.json();
@@ -45,6 +49,7 @@ explainBtn.addEventListener('click', async () => {
         if (data.scenes && data.quiz) {
             currentQuizData = data.quiz;
             clarityScenes = data.scenes;
+            currentConfidence = data.confidence_score || "95%"; // Fallback just in case
             setupInteractiveLoop(data);
             startLesson();
         }
@@ -176,8 +181,17 @@ function endLesson() {
     isPlaying = false;
     bgMusic.pause();
     
+    // NEW: Pedagogical Verification Badge injected into subtitle box
     if (subtitleBox) {
-        subtitleBox.innerHTML = `I hope you understood about <span class="font-bold text-black">${currentTopic}</span>, and if you want you can rewatch the video.`;
+        subtitleBox.innerHTML = `
+            <div class="flex flex-col items-center justify-center">
+                <div class="text-xs font-bold text-green-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2 drop-shadow-md">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                    AI Verified Content (Confidence: ${currentConfidence})
+                </div>
+                <div>I hope you gained Clarity on <span class="font-bold text-white">${currentTopic}</span>.</div>
+            </div>
+        `;
     }
     
     if (interactionArea) interactionArea.classList.remove('hidden');

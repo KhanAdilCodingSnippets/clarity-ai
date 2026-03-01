@@ -90,7 +90,14 @@
         <h1 class="text-9xl font-black tracking-tighter mb-12 text-black select-none">Clarity.</h1>
         <div class="flex flex-col items-center w-full max-w-2xl">
             <input id="topic-input" type="text" placeholder="What do you want to learn?" 
-            class="w-full text-2xl p-9 rounded-[2.5rem] border-none shadow-2xl focus:ring-8 focus:ring-blue-50 outline-none transition-all text-center mb-10 placeholder-gray-300">
+            class="w-full text-2xl p-9 rounded-[2.5rem] border-none shadow-2xl focus:ring-8 focus:ring-blue-50 outline-none transition-all text-center mb-6 placeholder-gray-300">
+            
+            <select id="difficulty-input" class="w-full text-xl p-6 rounded-[2rem] border-none shadow-lg focus:ring-4 focus:ring-blue-50 outline-none transition-all text-center mb-10 text-gray-600 bg-white cursor-pointer appearance-none">
+                <option value="Beginner (Grade 5-8)">Beginner (Grade 5-8)</option>
+                <option value="Intermediate (Grade 9-12)" selected>Intermediate (Grade 9-12)</option>
+                <option value="Expert (University/Professional)">Expert (University & Beyond)</option>
+            </select>
+
             <button id="explain-btn" class="bg-black text-white px-16 py-6 rounded-full text-2xl font-bold hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl">
                 START JOURNEY
             </button>
