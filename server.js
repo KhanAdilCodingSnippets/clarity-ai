@@ -15,15 +15,11 @@ const apiKeys = [
 ];
 
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || "CZ4nOZZBYcF0s1BitZYU8C8IBCK5n1S4S34b1Au21fzjYCdaliQwRoxQ";
-// Secured your ElevenLabs API Key
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_cce81ccc48c43716decc3bff2dda7929b2b8d6430d582093";
 
 let keyIndex = 0;
 
-app.use(cors({
-    origin: '*' 
-}));
-
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -135,13 +131,10 @@ app.post('/api/explain-topic', async (req, res) => {
     }
 });
 
-// NEW: ElevenLabs TTS Proxy Endpoint
 app.post('/api/tts', async (req, res) => {
     const { text } = req.body;
     
     try {
-        // Voice ID EXAVITQu4vr4xnSDxMaL is "Bella", a highly rated mentor voice. 
-        // eleven_multilingual_v2 handles code-switching between English and Indian languages flawlessly.
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL`, {
             method: 'POST',
             headers: {
@@ -156,8 +149,10 @@ app.post('/api/tts', async (req, res) => {
             })
         });
 
+        // NEW: If ElevenLabs rejects us, read the exact reason why!
         if (!response.ok) {
-            throw new Error(`ElevenLabs API Failed with status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`ElevenLabs Status ${response.status}: ${errorText}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
@@ -170,7 +165,7 @@ app.post('/api/tts', async (req, res) => {
         res.send(buffer);
     } catch (error) {
         console.error("TTS System Error:", error.message);
-        res.status(500).send("Error generating audio");
+        res.status(500).json({ error: error.message });
     }
 });
 
