@@ -20,6 +20,9 @@ let sceneTimeout = null;
 let currentTopic = ""; 
 let currentConfidence = ""; 
 
+// Pre-load voices for the browser
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
 explainBtn.addEventListener('click', async () => {
     const topicInput = document.getElementById('topic-input');
     const difficultyInput = document.getElementById('difficulty-input'); 
@@ -100,33 +103,31 @@ async function playCurrentScene() {
     stopSpeech();
 
     if (isPlaying) {
-        await new Promise(async (resolve) => {
+        await new Promise((resolve) => {
             window.currentSpeechResolve = resolve;
             
-            try {
-                // Fetch the studio-quality audio from our backend endpoint
-                const ttsResponse = await fetch('https://clarity-ai-dejg.onrender.com/api/tts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: scene.subtitle })
-                });
+            if ('speechSynthesis' in window) {
+                // Bug fix: Cancel any stuck audio before playing new audio
+                window.speechSynthesis.cancel(); 
                 
-                if (!ttsResponse.ok) throw new Error("Audio generation failed");
-
-                const blob = await ttsResponse.blob();
-                const audioUrl = URL.createObjectURL(blob);
-                window.currentAudioObj = new Audio(audioUrl);
+                const msg = new SpeechSynthesisUtterance(scene.subtitle);
+                const voices = window.speechSynthesis.getVoices();
                 
-                window.currentAudioObj.play();
+                // Prioritize Indian English, then UK English
+                const indianVoice = voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+                const ukVoice = voices.find(v => v.lang === 'en-GB' || v.name.includes('UK'));
                 
-                // Audio perfectly dictates the pace of the lesson now
-                window.currentAudioObj.onend = () => {
-                    if (window.currentSpeechResolve) resolve();
-                };
-            } catch (err) {
-                console.error("Audio playback error:", err);
-                // Fallback: Wait 4 seconds if the API limit is hit, then move on
-                setTimeout(() => { if (window.currentSpeechResolve) resolve(); }, 4000);
+                msg.voice = indianVoice || ukVoice || voices[0];
+                msg.rate = 0.95; // Slightly slower for clarity
+                msg.pitch = 1.0;
+                
+                msg.onend = () => { if (window.currentSpeechResolve) resolve(); };
+                msg.onerror = () => { if (window.currentSpeechResolve) resolve(); }; // Continue even if audio fails
+                
+                window.speechSynthesis.speak(msg);
+            } else {
+                // Fallback if browser doesn't support TTS
+                setTimeout(() => { if (window.currentSpeechResolve) resolve(); }, 3500);
             }
         });
 
@@ -138,16 +139,13 @@ async function playCurrentScene() {
                     currentSceneIndex++;
                     playCurrentScene();
                 }
-            }, 600); // Shorter cinematic pause between scenes
+            }, 800); 
         }
     }
 }
 
 function stopSpeech() {
-    if (window.currentAudioObj) {
-        window.currentAudioObj.pause();
-        window.currentAudioObj.currentTime = 0;
-    }
+    window.speechSynthesis.cancel();
     clearTimeout(sceneTimeout);
     if (window.currentSpeechResolve) {
         window.currentSpeechResolve();
