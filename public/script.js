@@ -72,17 +72,25 @@ async function playCurrentScene() {
         return;
     }
 
-    const scene = clarityScenes[currentSceneIndex];
+    let scene = clarityScenes[currentSceneIndex]; // Changed to let so we can modify it
 
     if (currentSceneIndex === 0) {
         scene.media_data = `<img src="https://i.ibb.co/mVyKpB5d/Screenshot-2026-03-01-at-10-31-00-AM.png" alt="Clarity Logo" class="w-full max-sm mx-auto object-contain" />`;
+    }
+
+    // NEW: Handle beautifully formatted Code Snippets on the Video Stage
+    let displayMedia = scene.media_data;
+    if (scene.media_type === "code") {
+        // Encode angle brackets so HTML tags inside code display correctly
+        const safeCode = scene.media_data.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        displayMedia = `<div class="w-full max-w-2xl mx-auto bg-[#1e1e1e] rounded-2xl p-6 text-left shadow-2xl border border-gray-700 overflow-x-auto"><pre><code class="text-sm md:text-base text-green-400 font-mono leading-relaxed">${safeCode}</code></pre></div>`;
     }
 
     if (progressBar) progressBar.style.width = `${((currentSceneIndex + 1) / clarityScenes.length) * 100}%`;
     if (subtitleBox) subtitleBox.innerText = scene.subtitle;
     
     if (visualContainer) {
-        visualContainer.innerHTML = `<div class="fade-in scale-100 md:scale-110 flex justify-center items-center w-full h-full">${scene.media_data}</div>`;
+        visualContainer.innerHTML = `<div class="fade-in scale-100 md:scale-110 flex justify-center items-center w-full h-full">${displayMedia}</div>`;
         const svg = visualContainer.querySelector('svg');
         if (svg) {
             svg.setAttribute('width', '100%');
@@ -180,14 +188,17 @@ function endLesson() {
     isPlaying = false;
     bgMusic.pause();
     
+    // NEW: Completely clears the SVG/Image from the screen so it doesn't overlap the final text
+    if (visualContainer) visualContainer.innerHTML = '';
+    
     if (subtitleBox) {
         subtitleBox.innerHTML = `
-            <div class="flex flex-col items-center justify-center">
+            <div class="flex flex-col items-center justify-center fade-in">
                 <div class="text-[10px] md:text-xs font-bold text-green-400 uppercase tracking-[0.2em] mb-2 md:mb-3 flex items-center gap-2 drop-shadow-md text-center">
                     <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
                     AI Verified Content (Confidence: ${currentConfidence})
                 </div>
-                <div class="text-lg md:text-4xl">I hope you gained Clarity on <span class="font-bold text-white">${currentTopic}</span>.</div>
+                <div class="text-xl md:text-4xl">I hope you gained Clarity on <span class="font-bold text-white">${currentTopic}</span>.</div>
             </div>
         `;
     }
@@ -208,7 +219,6 @@ function setupInteractiveLoop(data) {
     
     if (!testContainer || !debateContainer || !notesContainer) return;
 
-    // GENERATE SESSION NOTES
     let notesHTML = `
         <div class="mb-8 md:mb-12 text-center px-4">
             <h2 class="text-3xl md:text-4xl font-black tracking-tight text-gray-900 mb-2 md:mb-4">Session Notes</h2>
@@ -220,10 +230,17 @@ function setupInteractiveLoop(data) {
     data.scenes.forEach((scene, index) => {
         if (index === 0) return; 
 
+        // NEW: Handles displaying code correctly in the notes section
+        let notesMedia = scene.media_data;
+        if (scene.media_type === "code") {
+            const safeCode = scene.media_data.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            notesMedia = `<div class="w-full h-full bg-[#1e1e1e] p-4 text-left overflow-x-auto rounded-xl"><pre><code class="text-xs md:text-sm text-green-400 font-mono">${safeCode}</code></pre></div>`;
+        }
+
         notesHTML += `
             <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6 md:gap-10 items-center hover:shadow-md transition-shadow">
                 <div class="w-full md:w-5/12 bg-[#0a0a0a] rounded-2xl md:rounded-3xl overflow-hidden flex items-center justify-center p-4 md:p-6 aspect-video">
-                    ${scene.media_data}
+                    ${notesMedia}
                 </div>
                 <div class="w-full md:w-7/12 text-center md:text-left">
                     <div class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 md:mb-3">Key Concept 0${index}</div>
@@ -235,7 +252,6 @@ function setupInteractiveLoop(data) {
     notesHTML += `</div>`;
     notesContainer.innerHTML = notesHTML;
 
-    // GENERATE PRACTICE TEST
     testContainer.innerHTML = `
         <h2 class="text-2xl md:text-3xl font-black mb-6 md:mb-10 text-center tracking-tight uppercase">Practice Test</h2>
         <div class="px-4 md:px-0">
@@ -260,7 +276,6 @@ function setupInteractiveLoop(data) {
         </div>
     `;
     
-    // GENERATE DEBATE THOUGHT
     debateContainer.innerHTML = `
         <div class="px-4 md:px-0">
             <div class="bg-gray-900 p-8 md:p-12 rounded-[2rem] md:rounded-[3rem] text-white shadow-2xl max-w-4xl mx-auto text-center">
