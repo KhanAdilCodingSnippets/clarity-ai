@@ -18,7 +18,6 @@
             font-family: 'Inter', sans-serif;
         }
         
-        /* Subtle animated background */
         .infinite-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; opacity: 0.04;
@@ -26,7 +25,6 @@
             animation: slide 60s linear infinite;
         }
 
-        /* Ambient glow for the hero section */
         .ambient-orb {
             position: absolute;
             border-radius: 50%;
@@ -41,11 +39,11 @@
         }
 
         .fade-in {
-            animation: fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(20px); }
+            0% { opacity: 0; transform: translateY(15px); }
             100% { opacity: 1; transform: translateY(0); }
         }
 
@@ -61,11 +59,12 @@
         ::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
 
+        /* YOUTUBE STYLE: Perfect Fit for Visuals */
         #visual-container svg, #visual-container img {
             transition: all 0.5s ease;
             width: 100%;
             height: 100%;
-            max-height: 450px;
+            max-height: 100%;
             object-fit: contain; 
         }
 
@@ -73,32 +72,30 @@
             filter: drop-shadow(0 15px 30px rgba(0,0,0,0.5));
         }
 
+        /* YOUTUBE STYLE: Deep black player */
         .video-frame {
-            background: #050505; 
-            border: 1px solid #1f1f1f;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4);
+            background: #000000; 
+            border: 1px solid #1a1a1a;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        /* UPDATED: Cinematic blur to protect text from SVGs */
+        /* YOUTUBE STYLE: Closed Captions (Compact on mobile, large on desktop) */
         #subtitle-box {
-            min-height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff; 
-            background: rgba(5, 5, 5, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 1rem 2rem;
-            border-radius: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 50;
         }
 
         #playback-controls button {
             color: #ffffff;
-            opacity: 0.6;
-            transition: all 0.3s ease;
+            opacity: 0.75;
+            transition: all 0.2s ease;
         }
         #playback-controls button:hover {
             opacity: 1;
@@ -112,26 +109,26 @@
     <div class="ambient-orb w-96 h-96 bg-blue-200/40 top-0 left-0"></div>
     <div class="ambient-orb w-96 h-96 bg-purple-200/40 bottom-0 right-0" style="animation-delay: -5s;"></div>
 
-    <div id="landing-area" class="h-screen flex flex-col items-center justify-center p-4 md:p-6 fade-in relative z-10">
+    <div id="landing-area" class="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 fade-in relative z-10">
         
-        <div class="text-center mb-10 md:mb-14">
-            <h1 class="text-7xl md:text-[9rem] font-black tracking-tighter text-black select-none leading-none mb-4">Clarity.</h1>
+        <div class="text-center mb-8 md:mb-12">
+            <h1 class="text-6xl md:text-[8rem] font-black tracking-tighter text-black select-none leading-none mb-4">Clarity.</h1>
             <p class="text-gray-500 font-medium tracking-widest uppercase text-xs md:text-sm">The Multimodal Mentor</p>
         </div>
 
-        <div class="bg-white/60 backdrop-blur-2xl border border-white p-6 md:p-10 rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center w-full max-w-3xl">
+        <div class="bg-white/70 backdrop-blur-xl border border-white p-5 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] flex flex-col items-center w-full max-w-3xl">
             
             <input id="topic-input" type="text" placeholder="What do you want to learn?" 
-            class="w-full text-xl md:text-3xl p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 bg-white shadow-inner focus:ring-4 focus:ring-black/5 outline-none transition-all text-center mb-6 placeholder-gray-300 font-semibold">
+            class="w-full text-lg md:text-2xl p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 bg-white shadow-inner focus:ring-4 focus:ring-black/5 outline-none transition-all text-center mb-5 placeholder-gray-300 font-semibold">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-8">
-                <select id="difficulty-input" class="w-full text-base md:text-lg p-5 rounded-2xl border border-gray-100 shadow-sm focus:ring-4 focus:ring-black/5 outline-none transition-all text-gray-600 bg-white/80 cursor-pointer font-medium appearance-none text-center hover:bg-white">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full mb-6 md:mb-8">
+                <select id="difficulty-input" class="w-full text-sm md:text-lg p-4 md:p-5 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm focus:ring-4 focus:ring-black/5 outline-none transition-all text-gray-600 bg-white/80 cursor-pointer font-medium appearance-none text-center hover:bg-white">
                     <option value="Beginner (Grade 5-8)">Beginner (Grade 5-8)</option>
                     <option value="Intermediate (Grade 9-12)" selected>Intermediate (Grade 9-12)</option>
                     <option value="Expert (University/Professional)">Expert (University & Beyond)</option>
                 </select>
 
-               <select id="language-input" class="w-full text-base md:text-lg p-5 rounded-2xl border border-gray-100 shadow-sm focus:ring-4 focus:ring-black/5 outline-none transition-all text-gray-600 bg-white/80 cursor-pointer font-medium appearance-none text-center hover:bg-white">
+                <select id="language-input" class="w-full text-sm md:text-lg p-4 md:p-5 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm focus:ring-4 focus:ring-black/5 outline-none transition-all text-gray-600 bg-white/80 cursor-pointer font-medium appearance-none text-center hover:bg-white">
                     <option value="English" selected>English</option>
                     <option value="Hindi">हिंदी (Hindi)</option>
                     <option value="Gujarati">ગુજરાતી (Gujarati)</option>
@@ -145,64 +142,64 @@
                 </select>
             </div>
 
-            <button id="explain-btn" class="w-full bg-black text-white px-10 py-5 md:py-6 rounded-[1.5rem] text-lg md:text-2xl font-bold hover:bg-gray-900 active:scale-[0.98] transition-all duration-300 shadow-2xl tracking-wide flex items-center justify-center gap-3">
+            <button id="explain-btn" class="w-full bg-black text-white px-8 py-4 md:py-6 rounded-xl md:rounded-[1.5rem] text-base md:text-xl font-bold hover:bg-gray-900 active:scale-[0.98] transition-all duration-300 shadow-xl tracking-wide flex items-center justify-center gap-2">
                 START JOURNEY
-                <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                <svg class="w-5 h-5 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
             </button>
         </div>
     </div>
 
-    <div id="video-stage" class="hidden max-w-[90rem] mx-auto py-6 md:py-12 px-4 md:px-8 fade-in relative z-10">
+    <div id="video-stage" class="hidden w-full max-w-[80rem] mx-auto md:py-10 md:px-6 fade-in relative z-10">
         
-        <div class="video-frame rounded-[2.5rem] md:rounded-[4rem] overflow-hidden aspect-[4/3] md:aspect-video relative flex flex-col items-center justify-center p-4 md:p-12">
+        <div class="video-frame md:rounded-[3rem] overflow-hidden aspect-video relative flex flex-col items-center justify-center w-full">
             
-            <div class="absolute top-6 md:top-10 left-0 w-full px-8 md:px-24">
-                <div id="lesson-progress" class="h-1 md:h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="h-full bg-white w-0 transition-all duration-700 ease-out"></div>
+            <div class="absolute top-0 md:top-6 left-0 w-full px-0 md:px-16 z-40">
+                <div id="lesson-progress" class="h-1 md:h-1.5 bg-gray-800 md:rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-red-600 md:bg-white w-0 transition-all duration-500 ease-out"></div>
                 </div>
             </div>
 
-            <div id="visual-container" class="w-full h-1/2 md:h-3/4 flex items-center justify-center overflow-visible z-10 mt-8 md:mt-0">
+            <div id="visual-container" class="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden z-10 p-4 md:p-12 pb-24 md:pb-32">
             </div>
 
-            <div class="absolute bottom-20 md:bottom-28 w-full flex justify-center px-4 md:px-16 z-20">
-                <div id="subtitle-box" class="text-lg md:text-3xl font-bold tracking-normal leading-relaxed text-center max-w-5xl">
+            <div class="absolute bottom-16 md:bottom-24 w-full flex justify-center px-4 md:px-16 z-20 pointer-events-none">
+                <div id="subtitle-box" class="text-xs md:text-2xl font-semibold tracking-normal leading-snug text-center max-w-4xl px-4 py-2 md:px-8 md:py-4 rounded-lg md:rounded-2xl">
                     Preparing your clarity session...
                 </div>
             </div>
 
-            <div id="playback-controls" class="absolute bottom-4 md:bottom-10 w-full flex justify-center items-center gap-6 md:gap-10 hidden z-30">
+            <div id="playback-controls" class="absolute bottom-0 w-full h-16 md:h-20 bg-gradient-to-t from-black/90 to-transparent flex justify-center items-end pb-3 md:pb-6 gap-6 md:gap-10 hidden z-30">
                 <button onclick="prevScene()" class="p-2" title="Previous">
-                    <svg class="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                    <svg class="w-5 h-5 md:w-7 md:h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
                 </button>
                 <button onclick="togglePlay()" id="play-pause-btn" class="p-2 transform scale-110 md:scale-125" title="Play/Pause">
-                    <svg class="w-8 h-8 md:w-12 md:h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    <svg class="w-7 h-7 md:w-10 md:h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 </button>
                 <button onclick="nextScene()" class="p-2" title="Next">
-                    <svg class="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    <svg class="w-5 h-5 md:w-7 md:h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                 </button>
-                <button onclick="replayLesson()" class="p-2 ml-4 md:ml-8 border-l border-gray-700 pl-6 md:pl-10" title="Replay Lesson">
-                    <svg class="w-5 h-5 md:w-7 md:h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                <button onclick="replayLesson()" class="p-2 ml-4 md:ml-8" title="Replay Lesson">
+                    <svg class="w-4 h-4 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
                 </button>
             </div>
         </div>
 
-        <div id="interaction-area" class="mt-16 md:mt-24 hidden">
-            <nav class="flex justify-center gap-6 md:gap-16 border-b border-gray-200 mb-10 md:mb-16 text-xs md:text-sm font-bold tracking-widest text-gray-400 uppercase flex-wrap">
-                <button onclick="showTab('notes')" class="pb-4 md:pb-6 hover:text-black hover:border-b-2 hover:border-black transition-all focus:outline-none focus:text-black focus:border-b-2 focus:border-black">Lesson Notes</button>
-                <button onclick="showTab('test')" class="pb-4 md:pb-6 hover:text-black hover:border-b-2 hover:border-black transition-all focus:outline-none focus:text-black focus:border-b-2 focus:border-black">Practice Test</button>
-                <button onclick="showTab('debate')" class="pb-4 md:pb-6 hover:text-black hover:border-b-2 hover:border-black transition-all focus:outline-none focus:text-black focus:border-b-2 focus:border-black">The Thought</button>
-                <button onclick="showTab('result')" class="pb-4 md:pb-6 hover:text-black transition-all focus:outline-none focus:text-black hidden" id="result-tab-btn">Evaluation</button>
+        <div id="interaction-area" class="mt-10 md:mt-20 px-4 md:px-0 hidden">
+            <nav class="flex justify-center gap-4 md:gap-12 border-b border-gray-200 mb-8 md:mb-12 text-[10px] md:text-sm font-bold tracking-widest text-gray-400 uppercase flex-wrap">
+                <button onclick="showTab('notes')" class="pb-3 md:pb-5 hover:text-black hover:border-b-2 hover:border-black transition-all focus:outline-none focus:text-black focus:border-b-2 focus:border-black">Lesson Notes</button>
+                <button onclick="showTab('test')" class="pb-3 md:pb-5 hover:text-black hover:border-b-2 hover:border-black transition-all focus:outline-none focus:text-black focus:border-b-2 focus:border-black">Practice Test</button>
+                <button onclick="showTab('debate')" class="pb-3 md:pb-5 hover:text-black hover:border-b-2 hover:border-black transition-all focus:outline-none focus:text-black focus:border-b-2 focus:border-black">The Thought</button>
+                <button onclick="showTab('result')" class="pb-3 md:pb-5 hover:text-black transition-all focus:outline-none focus:text-black hidden" id="result-tab-btn">Evaluation</button>
             </nav>
 
-            <div id="notes-content" class="tab-content fade-in max-w-6xl mx-auto"></div>
-            <div id="test-content" class="tab-content hidden fade-in max-w-4xl mx-auto"></div>
+            <div id="notes-content" class="tab-content fade-in max-w-5xl mx-auto"></div>
+            <div id="test-content" class="tab-content hidden fade-in max-w-3xl mx-auto"></div>
             <div id="debate-content" class="tab-content hidden fade-in"></div>
             <div id="result-content" class="tab-content hidden fade-in"></div>
         </div>
         
-        <footer class="mt-24 md:mt-40 text-center pb-10 md:pb-20 opacity-50 hover:opacity-100 transition-opacity">
-            <p class="text-gray-500 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs">Engineered by The Iterators</p>
+        <footer class="mt-20 md:mt-32 text-center pb-8 md:pb-16 opacity-60">
+            <p class="text-gray-500 font-semibold tracking-widest uppercase text-[10px] md:text-xs">&copy; 2026 Clarity AI.</p>
         </footer>
     </div>
 
