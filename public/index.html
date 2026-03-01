@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clarity | Simple Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=Dkx4Eopd"></script>
+    <style>
+        body { background-color: #FBFBFD; }
+        
+        .infinite-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.05;
+            background: url('https://www.transparenttextures.com/patterns/cubes.png');
+            animation: slide 60s linear infinite;
+        }
+
+        .fade-in {
+            animation: fadeIn 1.2s cubic-bezier(0.390, 0.575, 0.565, 1.000) both;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slide { 
+            from { background-position: 0 0; } 
+            to { background-position: 1000px 1000px; } 
+        }
+
+        .hidden { display: none !important; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b1b1b1; }
+
+        /* Unified styling for perfectly fitted media */
+        #visual-container svg, #visual-container img {
+            transition: all 0.5s ease;
+            width: 100%;
+            height: 100%;
+            max-height: 450px;
+            object-fit: contain; /* Guarantees nothing is ever cut off */
+        }
+
+        #visual-container svg {
+            filter: drop-shadow(0 10px 25px rgba(0,0,0,0.4));
+        }
+
+        /* Cinematic Dark Theme for Video Stage */
+        .video-frame {
+            background: #0a0a0a; /* Deep black for premium video feel */
+            border: 1px solid #222;
+        }
+
+        /* Perfect Subtitle Visibility */
+        #subtitle-box {
+            min-height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff; /* White text */
+            /* This creates a crisp, readable black stroke around the text */
+            text-shadow: 
+                -2px -2px 0 #000,  
+                 2px -2px 0 #000,
+                -2px  2px 0 #000,
+                 2px  2px 0 #000,
+                 0px  6px 15px rgba(0,0,0,0.9);
+        }
+
+        /* Lighten up the play controls so they are visible on black */
+        #playback-controls button {
+            color: #ffffff;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        #playback-controls button:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-900">
+    <div class="infinite-bg"></div>
+
+    <div id="landing-area" class="h-screen flex flex-col items-center justify-center p-6 fade-in">
+        <h1 class="text-9xl font-black tracking-tighter mb-12 text-black select-none">Clarity.</h1>
+        <div class="flex flex-col items-center w-full max-w-2xl">
+            <input id="topic-input" type="text" placeholder="What do you want to learn?" 
+            class="w-full text-2xl p-9 rounded-[2.5rem] border-none shadow-2xl focus:ring-8 focus:ring-blue-50 outline-none transition-all text-center mb-10 placeholder-gray-300">
+            <button id="explain-btn" class="bg-black text-white px-16 py-6 rounded-full text-2xl font-bold hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl">
+                START JOURNEY
+            </button>
+        </div>
+    </div>
+
+    <div id="video-stage" class="hidden max-w-7xl mx-auto py-12 px-6 fade-in">
+        
+        <div class="video-frame rounded-[4rem] shadow-2xl overflow-hidden aspect-video relative flex flex-col items-center justify-center p-12">
+            
+            <div class="absolute top-10 left-0 w-full px-20">
+                <div id="lesson-progress" class="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-white w-0 transition-all duration-700 ease-out"></div>
+                </div>
+            </div>
+
+            <div id="visual-container" class="w-full h-3/4 flex items-center justify-center overflow-visible z-10">
+            </div>
+
+            <div class="absolute bottom-28 w-full text-center px-16 z-20">
+                <div id="subtitle-box" class="text-4xl font-extrabold tracking-normal leading-tight">
+                    Preparing your clarity session...
+                </div>
+            </div>
+
+            <div id="playback-controls" class="absolute bottom-8 w-full flex justify-center items-center gap-8 hidden z-30">
+                <button onclick="prevScene()" class="p-2" title="Previous">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button>
+                <button onclick="togglePlay()" id="play-pause-btn" class="p-2 transform scale-125" title="Play/Pause">
+                    <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button onclick="nextScene()" class="p-2" title="Next">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+                <button onclick="replayLesson()" class="p-2 ml-6 border-l border-gray-600 pl-8" title="Replay Lesson">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="interaction-area" class="mt-24 hidden">
+            <nav class="flex justify-center gap-16 border-b border-gray-100 mb-16 text-sm font-bold tracking-widest text-gray-400 uppercase">
+                <button onclick="showTab('test')" class="pb-6 hover:text-black transition-colors">Practice Test</button>
+                <button onclick="showTab('debate')" class="pb-6 hover:text-black transition-colors">The Thought</button>
+                <button onclick="showTab('result')" class="pb-6 hover:text-black transition-colors">Evaluation</button>
+            </nav>
+
+            <div id="test-content" class="tab-content fade-in"></div>
+            <div id="debate-content" class="tab-content hidden fade-in"></div>
+            <div id="result-content" class="tab-content hidden fade-in"></div>
+        </div>
+        
+        <footer class="mt-32 text-center pb-20">
+            <p class="text-gray-300 font-bold tracking-[0.3em] uppercase text-xs">A Product of Clarity AI</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
