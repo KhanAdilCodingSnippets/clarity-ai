@@ -72,16 +72,14 @@ async function playCurrentScene() {
         return;
     }
 
-    let scene = clarityScenes[currentSceneIndex]; // Changed to let so we can modify it
+    let scene = clarityScenes[currentSceneIndex]; 
 
     if (currentSceneIndex === 0) {
         scene.media_data = `<img src="https://i.ibb.co/mVyKpB5d/Screenshot-2026-03-01-at-10-31-00-AM.png" alt="Clarity Logo" class="w-full max-sm mx-auto object-contain" />`;
     }
 
-    // NEW: Handle beautifully formatted Code Snippets on the Video Stage
     let displayMedia = scene.media_data;
     if (scene.media_type === "code") {
-        // Encode angle brackets so HTML tags inside code display correctly
         const safeCode = scene.media_data.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         displayMedia = `<div class="w-full max-w-2xl mx-auto bg-[#1e1e1e] rounded-2xl p-6 text-left shadow-2xl border border-gray-700 overflow-x-auto"><pre><code class="text-sm md:text-base text-green-400 font-mono leading-relaxed">${safeCode}</code></pre></div>`;
     }
@@ -102,18 +100,33 @@ async function playCurrentScene() {
     stopSpeech();
 
     if (isPlaying) {
-        await new Promise((resolve) => {
+        await new Promise(async (resolve) => {
             window.currentSpeechResolve = resolve;
             
-            if (typeof responsiveVoice !== 'undefined') {
-                responsiveVoice.speak(scene.subtitle, "UK English Female", { 
-                    onend: () => { if (window.currentSpeechResolve) resolve(); }, 
-                    rate: 0.9 
+            try {
+                // Fetch the studio-quality audio from our backend endpoint
+                const ttsResponse = await fetch('https://clarity-ai-dejg.onrender.com/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: scene.subtitle })
                 });
-            } else {
-                const msg = new SpeechSynthesisUtterance(scene.subtitle);
-                msg.onend = () => { if (window.currentSpeechResolve) resolve(); };
-                window.speechSynthesis.speak(msg);
+                
+                if (!ttsResponse.ok) throw new Error("Audio generation failed");
+
+                const blob = await ttsResponse.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                window.currentAudioObj = new Audio(audioUrl);
+                
+                window.currentAudioObj.play();
+                
+                // Audio perfectly dictates the pace of the lesson now
+                window.currentAudioObj.onend = () => {
+                    if (window.currentSpeechResolve) resolve();
+                };
+            } catch (err) {
+                console.error("Audio playback error:", err);
+                // Fallback: Wait 4 seconds if the API limit is hit, then move on
+                setTimeout(() => { if (window.currentSpeechResolve) resolve(); }, 4000);
             }
         });
 
@@ -125,14 +138,16 @@ async function playCurrentScene() {
                     currentSceneIndex++;
                     playCurrentScene();
                 }
-            }, 800); 
+            }, 600); // Shorter cinematic pause between scenes
         }
     }
 }
 
 function stopSpeech() {
-    if (typeof responsiveVoice !== 'undefined') responsiveVoice.cancel();
-    window.speechSynthesis.cancel();
+    if (window.currentAudioObj) {
+        window.currentAudioObj.pause();
+        window.currentAudioObj.currentTime = 0;
+    }
     clearTimeout(sceneTimeout);
     if (window.currentSpeechResolve) {
         window.currentSpeechResolve();
@@ -188,7 +203,6 @@ function endLesson() {
     isPlaying = false;
     bgMusic.pause();
     
-    // NEW: Completely clears the SVG/Image from the screen so it doesn't overlap the final text
     if (visualContainer) visualContainer.innerHTML = '';
     
     if (subtitleBox) {
@@ -230,7 +244,6 @@ function setupInteractiveLoop(data) {
     data.scenes.forEach((scene, index) => {
         if (index === 0) return; 
 
-        // NEW: Handles displaying code correctly in the notes section
         let notesMedia = scene.media_data;
         if (scene.media_type === "code") {
             const safeCode = scene.media_data.replace(/</g, '&lt;').replace(/>/g, '&gt;');

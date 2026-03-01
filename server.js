@@ -15,6 +15,8 @@ const apiKeys = [
 ];
 
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || "CZ4nOZZBYcF0s1BitZYU8C8IBCK5n1S4S34b1Au21fzjYCdaliQwRoxQ";
+// Secured your ElevenLabs API Key
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_cce81ccc48c43716decc3bff2dda7929b2b8d6430d582093";
 
 let keyIndex = 0;
 
@@ -45,7 +47,6 @@ app.post('/api/explain-topic', async (req, res) => {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            // ULTIMATE PROMPT: Fixed Layering, Code Formatting, and Wikipedia Sourcing
             const prompt = `Act as a world-class educational mentor. Your name is Clarity.
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience. Adjust your vocabulary and depth perfectly.
             
@@ -131,6 +132,45 @@ app.post('/api/explain-topic', async (req, res) => {
     } catch (error) {
         console.error("Clarity System Error:", error.message);
         res.status(500).json({ error: "System failed to gain clarity. Please try again." });
+    }
+});
+
+// NEW: ElevenLabs TTS Proxy Endpoint
+app.post('/api/tts', async (req, res) => {
+    const { text } = req.body;
+    
+    try {
+        // Voice ID EXAVITQu4vr4xnSDxMaL is "Bella", a highly rated mentor voice. 
+        // eleven_multilingual_v2 handles code-switching between English and Indian languages flawlessly.
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'audio/mpeg',
+                'xi-api-key': ELEVENLABS_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: "eleven_multilingual_v2",
+                voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`ElevenLabs API Failed with status: ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        
+        res.set({
+            'Content-Type': 'audio/mpeg',
+            'Content-Length': buffer.length
+        });
+        res.send(buffer);
+    } catch (error) {
+        console.error("TTS System Error:", error.message);
+        res.status(500).send("Error generating audio");
     }
 });
 
