@@ -2,15 +2,26 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { ElevenLabsClient } = require('@elevenlabs/elevenlabs-js');
+// NEW: Import the Google Cloud TTS library
+const textToSpeech = require('@google-cloud/text-to-speech');
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize ElevenLabs with your key
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_c7c89d2ae26a8ba8eb6763d1f2e3056e8a0dbdece18262ee";
-const elevenlabs = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
+// NEW: Securely initialize Google Cloud TTS
+let ttsClient;
+try {
+    if (process.env.GOOGLE_CREDENTIALS) {
+        const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+        ttsClient = new textToSpeech.TextToSpeechClient({ credentials });
+        console.log("Clarity System: Google Cloud TTS Initialized Successfully.");
+    } else {
+        console.warn("Clarity System: GOOGLE_CREDENTIALS not found. TTS will fall back to browser voice.");
+    }
+} catch (error) {
+    console.error("Clarity System: Failed to parse GOOGLE_CREDENTIALS.", error.message);
+}
 
 const apiKeys = [
     process.env.GEMINI_KEY_1,
@@ -39,7 +50,7 @@ app.post('/api/explain-topic', async (req, res) => {
         const currentKey = apiKeys[currentIdx];
         const genAI = new GoogleGenerativeAI(currentKey);
 
-        console.log(`Clarity System: Attempting with Key #${currentIdx + 1}`);
+        console.log(`Clarity System: Attempting generation with Key #${currentIdx + 1}`);
 
         try {
             const model = genAI.getGenerativeModel({ 
@@ -47,7 +58,7 @@ app.post('/api/explain-topic', async (req, res) => {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            // BULLETPROOF PROMPT: Removed Wikipedia logic to prevent 404 errors.
+            // BULLETPROOF PROMPT: Safe visuals and code blocks.
             const prompt = `Act as a world-class educational mentor. Your name is Clarity.
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience.
             
@@ -134,43 +145,30 @@ app.post('/api/explain-topic', async (req, res) => {
     }
 });
 
-// ROBUST ELEVENLABS SDK STREAMING
+// NEW: Rock-solid Google Cloud TTS Endpoint
 app.post('/api/tts', async (req, res) => {
     const { text } = req.body;
     
+    if (!ttsClient) {
+        return res.status(500).json({ error: "TTS Client not configured." });
+    }
+
     try {
-        // FIXED: Using camelCase properties required by the SDK
-        const audioStream = await elevenlabs.textToSpeech.convert('JBFqnCBsd6RMkjVDRZzb', {
-            text: text,
-            modelId: 'eleven_multilingual_v2',
-            outputFormat: 'mp3_44100_128',
-        });
+        const request = {
+            input: { text: text },
+            // Premium Indian English Voice
+            voice: { languageCode: 'en-IN', name: 'en-IN-Neural2-A' },
+            audioConfig: { audioEncoding: 'MP3' },
+        };
+
+        const [response] = await ttsClient.synthesizeSpeech(request);
 
         res.setHeader('Content-Type', 'audio/mpeg');
-
-        // Express handling for the Node.js Stream returned by ElevenLabs
-        if (typeof audioStream.pipe === 'function') {
-            audioStream.pipe(res);
-        } else if (audioStream.getReader) {
-            // Fallback if the SDK returns a Web Stream instead of a Node Stream
-            const reader = audioStream.getReader();
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                res.write(value);
-            }
-            res.end();
-        } else {
-            // Fallback for Async Iterators
-            for await (const chunk of audioStream) {
-                res.write(chunk);
-            }
-            res.end();
-        }
+        res.send(response.audioContent);
 
     } catch (error) {
-        console.error("ElevenLabs SDK Error:", error);
-        res.status(500).json({ error: "Audio generation failed" });
+        console.error("Google Cloud TTS Error:", error.message);
+        res.status(500).json({ error: "Audio generation failed", details: error.message });
     }
 });
 
