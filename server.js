@@ -2,13 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { ElevenLabsClient } = require('@elevenlabs/elevenlabs-js'); // NEW: Official SDK
+const { ElevenLabsClient } = require('@elevenlabs/elevenlabs-js');
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize ElevenLabs with your new key
+// Initialize ElevenLabs with your key
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || "sk_c7c89d2ae26a8ba8eb6763d1f2e3056e8a0dbdece18262ee";
 const elevenlabs = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
 
@@ -32,7 +32,7 @@ app.post('/api/explain-topic', async (req, res) => {
 
     async function tryGenerate(index) {
         if (index >= apiKeys.length) {
-            throw new Error("All API keys are exhausted.");
+            throw new Error("All API keys are exhausted. Please try again later.");
         }
 
         const currentIdx = (keyIndex + index) % apiKeys.length;
@@ -47,6 +47,7 @@ app.post('/api/explain-topic', async (req, res) => {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
+            // BULLETPROOF PROMPT: Removed Wikipedia logic to prevent 404 errors.
             const prompt = `Act as a world-class educational mentor. Your name is Clarity.
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience.
             
@@ -57,7 +58,7 @@ app.post('/api/explain-topic', async (req, res) => {
             
             FOLLOWING SCENES (8-10 scenes total):
             - YOU ARE THE DIRECTOR. Choose the exact right medium for each scene:
-              - REALITY: For tangible objects, nature, or people, use "photo" and provide a simple 1-2 word Pexels search keyword.
+              - REALITY: For tangible objects, nature, or specific people, use "photo" and provide a simple 1-2 word Pexels search keyword. Do not use external URLs.
               - PROGRAMMING/CODE: If teaching programming, use "code" and provide the raw, perfectly formatted code snippet in media_data.
               - THEORY/DIAGRAMS: For abstract concepts, math, or history, use "svg" and provide raw SVG code.
             
@@ -133,28 +134,39 @@ app.post('/api/explain-topic', async (req, res) => {
     }
 });
 
-// NEW: Robust SDK-powered TTS Endpoint
+// ROBUST ELEVENLABS SDK STREAMING
 app.post('/api/tts', async (req, res) => {
     const { text } = req.body;
     
     try {
-        // Use the exact parameters from your example
+        // FIXED: Using camelCase properties required by the SDK
         const audioStream = await elevenlabs.textToSpeech.convert('JBFqnCBsd6RMkjVDRZzb', {
             text: text,
-            model_id: 'eleven_multilingual_v2',
-            output_format: 'mp3_44100_128',
+            modelId: 'eleven_multilingual_v2',
+            outputFormat: 'mp3_44100_128',
         });
 
         res.setHeader('Content-Type', 'audio/mpeg');
-        
-        // Convert the Web Stream into chunks and push them directly to the Express response
-        const reader = audioStream.getReader();
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(value); 
+
+        // Express handling for the Node.js Stream returned by ElevenLabs
+        if (typeof audioStream.pipe === 'function') {
+            audioStream.pipe(res);
+        } else if (audioStream.getReader) {
+            // Fallback if the SDK returns a Web Stream instead of a Node Stream
+            const reader = audioStream.getReader();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                res.write(value);
+            }
+            res.end();
+        } else {
+            // Fallback for Async Iterators
+            for await (const chunk of audioStream) {
+                res.write(chunk);
+            }
+            res.end();
         }
-        res.end(); // Close the connection once the audio file is fully sent
 
     } catch (error) {
         console.error("ElevenLabs SDK Error:", error);
