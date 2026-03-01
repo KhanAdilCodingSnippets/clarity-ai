@@ -33,7 +33,8 @@ explainBtn.addEventListener('click', async () => {
     if (progressBar) progressBar.style.width = '0%';
     
     try {
-        const response = await fetch('/api/explain-topic', {
+        // WIRED TO LIVE BACKEND: Replaced local path with your Render URL
+        const response = await fetch('https://clarity-ai-dejg.onrender.com/api/explain-topic', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ topic: currentTopic })
@@ -69,16 +70,14 @@ async function playCurrentScene() {
 
     const scene = clarityScenes[currentSceneIndex];
 
-    // Frontend Override: Guarantee the image is perfect for scene 1
     if (currentSceneIndex === 0) {
-        scene.media_data = `<img src="https://i.ibb.co/mVyKpB5d/Screenshot-2026-03-01-at-10-31-00-AM.png" alt="Clarity Logo" class="w-full max-w-sm mx-auto object-contain" />`;
+        scene.media_data = `<img src="https://i.ibb.co/mVyKpB5d/Screenshot-2026-03-01-at-10-31-00-AM.png" alt="Clarity Logo" class="w-full max-sm mx-auto object-contain" />`;
     }
 
     if (progressBar) progressBar.style.width = `${((currentSceneIndex + 1) / clarityScenes.length) * 100}%`;
     if (subtitleBox) subtitleBox.innerText = scene.subtitle;
     
     if (visualContainer) {
-        // Updated from scene.diagram to scene.media_data
         visualContainer.innerHTML = `<div class="fade-in scale-110 flex justify-center items-center w-full h-full">${scene.media_data}</div>`;
         const svg = visualContainer.querySelector('svg');
         if (svg) {
@@ -88,11 +87,10 @@ async function playCurrentScene() {
         }
     }
 
-    stopSpeech(); // Clear any existing audio/timeouts
+    stopSpeech();
 
     if (isPlaying) {
         await new Promise((resolve) => {
-            // Assign to global so we can forcibly resolve it if user skips
             window.currentSpeechResolve = resolve;
             
             if (typeof responsiveVoice !== 'undefined') {
@@ -107,9 +105,8 @@ async function playCurrentScene() {
             }
         });
 
-        window.currentSpeechResolve = null; // clear it
+        window.currentSpeechResolve = null;
 
-        // Strict 800ms pause after speech ends before moving to next
         if (isPlaying) {
             sceneTimeout = setTimeout(() => {
                 if (isPlaying) {
@@ -179,7 +176,6 @@ function endLesson() {
     isPlaying = false;
     bgMusic.pause();
     
-    // Custom closing text
     if (subtitleBox) {
         subtitleBox.innerHTML = `I hope you understood about <span class="font-bold text-black">${currentTopic}</span>, and if you want you can rewatch the video.`;
     }
