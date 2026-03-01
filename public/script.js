@@ -18,11 +18,11 @@ let currentSceneIndex = 0;
 let isPlaying = false;
 let sceneTimeout = null;
 let currentTopic = ""; 
-let currentConfidence = ""; // NEW: Store the verification score
+let currentConfidence = ""; 
 
 explainBtn.addEventListener('click', async () => {
     const topicInput = document.getElementById('topic-input');
-    const difficultyInput = document.getElementById('difficulty-input'); // Capture difficulty
+    const difficultyInput = document.getElementById('difficulty-input'); 
     
     currentTopic = topicInput ? topicInput.value : "";
     const currentDifficulty = difficultyInput ? difficultyInput.value : "Intermediate";
@@ -37,7 +37,6 @@ explainBtn.addEventListener('click', async () => {
     if (progressBar) progressBar.style.width = '0%';
     
     try {
-        // Send both topic AND level to the backend
         const response = await fetch('https://clarity-ai-dejg.onrender.com/api/explain-topic', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -49,7 +48,7 @@ explainBtn.addEventListener('click', async () => {
         if (data.scenes && data.quiz) {
             currentQuizData = data.quiz;
             clarityScenes = data.scenes;
-            currentConfidence = data.confidence_score || "95%"; // Fallback just in case
+            currentConfidence = data.confidence_score || "95%"; 
             setupInteractiveLoop(data);
             startLesson();
         }
@@ -181,7 +180,6 @@ function endLesson() {
     isPlaying = false;
     bgMusic.pause();
     
-    // NEW: Pedagogical Verification Badge injected into subtitle box
     if (subtitleBox) {
         subtitleBox.innerHTML = `
             <div class="flex flex-col items-center justify-center">
@@ -194,17 +192,51 @@ function endLesson() {
         `;
     }
     
-    if (interactionArea) interactionArea.classList.remove('hidden');
+    if (interactionArea) {
+        interactionArea.classList.remove('hidden');
+        showTab('notes'); // Automatically open the notes tab when the lesson ends
+    }
+    
     playPauseBtn.innerHTML = `<svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
     window.scrollTo({ top: interactionArea.offsetTop - 50, behavior: 'smooth' });
 }
 
 function setupInteractiveLoop(data) {
+    const notesContainer = document.getElementById('notes-content');
     const testContainer = document.getElementById('test-content');
     const debateContainer = document.getElementById('debate-content');
     
-    if (!testContainer || !debateContainer) return;
+    if (!testContainer || !debateContainer || !notesContainer) return;
 
+    // --- 1. GENERATE SESSION NOTES ---
+    let notesHTML = `
+        <div class="mb-12 text-center">
+            <h2 class="text-4xl font-black tracking-tight text-gray-900 mb-4">Session Notes</h2>
+            <p class="text-lg text-gray-500 font-medium">A complete review of your Clarity session on <span class="text-black font-bold">${currentTopic}</span>.</p>
+        </div>
+        <div class="space-y-12">
+    `;
+    
+    data.scenes.forEach((scene, index) => {
+        // Skip the logo intro scene for the notes
+        if (index === 0) return; 
+
+        notesHTML += `
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col md:flex-row gap-10 items-center hover:shadow-md transition-shadow">
+                <div class="w-full md:w-5/12 bg-[#0a0a0a] rounded-3xl overflow-hidden flex items-center justify-center p-6 aspect-video">
+                    ${scene.media_data}
+                </div>
+                <div class="w-full md:w-7/12">
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Key Concept 0${index}</div>
+                    <p class="text-xl leading-relaxed text-gray-800 font-medium">${scene.subtitle}</p>
+                </div>
+            </div>
+        `;
+    });
+    notesHTML += `</div>`;
+    notesContainer.innerHTML = notesHTML;
+
+    // --- 2. GENERATE PRACTICE TEST ---
     testContainer.innerHTML = `
         <h2 class="text-3xl font-black mb-10 text-center tracking-tight uppercase">Practice Test</h2>
         ${data.quiz.map((q, i) => `
@@ -227,9 +259,10 @@ function setupInteractiveLoop(data) {
         </div>
     `;
     
+    // --- 3. GENERATE DEBATE THOUGHT ---
     debateContainer.innerHTML = `
-        <div class="bg-gray-900 p-12 rounded-[3rem] text-white">
-            <h3 class="text-sm font-bold opacity-50 uppercase tracking-[0.2em] mb-4">The Deep Thought</h3>
+        <div class="bg-gray-900 p-12 rounded-[3rem] text-white shadow-2xl max-w-4xl mx-auto text-center">
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-[0.3em] mb-4">The Deep Thought</h3>
             <p class="text-3xl font-medium leading-relaxed italic">"${data.debate}"</p>
         </div>
     `;

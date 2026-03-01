@@ -140,13 +140,16 @@
         </div>
 
         <div id="interaction-area" class="mt-24 hidden">
-            <nav class="flex justify-center gap-16 border-b border-gray-100 mb-16 text-sm font-bold tracking-widest text-gray-400 uppercase">
-                <button onclick="showTab('test')" class="pb-6 hover:text-black transition-colors">Practice Test</button>
-                <button onclick="showTab('debate')" class="pb-6 hover:text-black transition-colors">The Thought</button>
-                <button onclick="showTab('result')" class="pb-6 hover:text-black transition-colors">Evaluation</button>
+            <nav class="flex justify-center gap-12 border-b border-gray-100 mb-16 text-sm font-bold tracking-widest text-gray-400 uppercase flex-wrap">
+                <button onclick="showTab('notes')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">Lesson Notes</button>
+                <button onclick="showTab('test')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">Practice Test</button>
+                <button onclick="showTab('debate')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black">The Thought</button>
+                <button onclick="showTab('result')" class="pb-6 hover:text-black transition-colors focus:outline-none focus:text-black hidden" id="result-tab-btn">Evaluation</button>
             </nav>
 
-            <div id="test-content" class="tab-content fade-in"></div>
+            <div id="notes-content" class="tab-content fade-in max-w-5xl mx-auto"></div>
+            
+            <div id="test-content" class="tab-content hidden fade-in"></div>
             <div id="debate-content" class="tab-content hidden fade-in"></div>
             <div id="result-content" class="tab-content hidden fade-in"></div>
         </div>
