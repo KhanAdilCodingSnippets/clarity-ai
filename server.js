@@ -28,21 +28,17 @@ const apiKeys = [
     process.env.GEMINI_KEY_4
 ];
 
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY || "CZ4nOZZBYcF0s1BitZYU8C8IBCK5n1S4S34b1Au21fzjYCdaliQwRoxQ";
-
 let keyIndex = 0;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// THE WATERFALL CURATION ENGINE
-async function fetchCuratedImage(academicQuery, visualMetaphor) {
-    // 1. Clean the incoming string so we do not crash the APIs
-    const cleanQuery = (academicQuery || "education concept").replace(/<[^>]*>?/gm, '').trim();
-    const cleanMetaphor = (visualMetaphor || "science").replace(/<[^>]*>?/gm, '').trim();
+// THE STREAMLINED EDUCATIONAL CURATION ENGINE
+async function fetchCuratedImage(academicQuery) {
+    const cleanQuery = (academicQuery || "education").replace(/<[^>]*>?/gm, '').trim();
 
-    // TIER 1: WIKIPEDIA
+    // TIER 1: WIKIPEDIA (Perfect for History, Geography, and Famous People)
     try {
         const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(cleanQuery.substring(0, 50))}&prop=pageimages&format=json&pithumbsize=800`);
         const wikiData = await wikiRes.json();
@@ -50,27 +46,21 @@ async function fetchCuratedImage(academicQuery, visualMetaphor) {
         const pageId = Object.keys(pages)[0];
         
         if (pageId !== "-1" && pages[pageId].thumbnail) {
+            console.log(`[Engine] Wikipedia Success: ${cleanQuery}`);
             return pages[pageId].thumbnail.source;
         }
     } catch(e) {}
 
-    // TIER 2: PEXELS
-    try {
-        const pexelsRes = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(cleanMetaphor.substring(0, 40))}&per_page=1`, {
-            headers: { Authorization: PEXELS_API_KEY }
-        });
-        const pexelsData = await pexelsRes.json();
-        
-        if (pexelsData.photos && pexelsData.photos.length > 0) {
-            return pexelsData.photos[0].src.landscape;
-        }
-    } catch(e) {}
-
-    // TIER 3: POLLINATIONS AI (With strict 403 Firewall Prevention)
-    // We aggressively truncate to 80 characters so Cloudflare does not block the request
-    let shortPrompt = cleanQuery.substring(0, 80).replace(/[^a-zA-Z0-9 ]/g, '');
+    // TIER 2: THE AI INFOGRAPHIC ENGINE (Perfect for Science, Math, and Concepts)
+    console.log(`[Engine] Generating Custom AI Diagram for: ${cleanQuery}`);
+    
+    let shortPrompt = cleanQuery.substring(0, 70).replace(/[^a-zA-Z0-9 ]/g, '');
     const randomSeed = Math.floor(Math.random() * 100000);
-    const safePrompt = encodeURIComponent(`${shortPrompt}, educational diagram, cinematic lighting`);
+    
+    // We force the AI to draw a textbook-style diagram, not a realistic photo
+    const styleModifiers = "flat vector illustration, educational diagram, minimal infographic, dark background, bold neon colors";
+    const safePrompt = encodeURIComponent(`${shortPrompt}, ${styleModifiers}`);
+    
     return `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true&seed=${randomSeed}`;
 }
 
@@ -110,11 +100,10 @@ app.post('/api/explain-topic', async (req, res) => {
             - Subtitle: "Welcome to Clarity. Today our objective is to master the core principles of ${topic}."
             - media_type: "image"
             - academic_query: "${topic}"
-            - visual_metaphor: "education"
             
             FOLLOWING SCENES (8-10 scenes total):
             - YOU ARE THE ART DIRECTOR. For every scene, choose the exact right medium:
-              - REALITY ("image"): You MUST provide an 'academic_query' (Max 3 words, e.g., "Albert Einstein") AND a 1-word 'visual_metaphor' in English (e.g., "clock"). DO NOT write long descriptive paragraphs.
+              - REALITY ("image"): You MUST provide an 'academic_query' (Max 3 words, e.g., "Albert Einstein" or "Quantum Physics"). DO NOT write long descriptive paragraphs.
               - PROGRAMMING ("code"): Provide raw code snippet in 'media_data'.
               - DIAGRAMS ("svg"): Provide precise SVG code in 'media_data'. 
                 CRITICAL SVG RULES FOR DARK MODE:
@@ -132,8 +121,7 @@ app.post('/api/explain-topic', async (req, res) => {
                   "subtitle": "Spoken sentence translated to ${targetLanguage}.",
                   "media_type": "svg" or "image" or "code",
                   "media_data": "SVG code OR raw code snippet (Leave empty if media_type is image)",
-                  "academic_query": "Max 3 word noun for Wikipedia (Leave empty if code/svg)",
-                  "visual_metaphor": "1-word real world object for Pexels (Leave empty if code/svg)"
+                  "academic_query": "Max 3 word noun for Wikipedia or AI Diagram (Leave empty if code/svg)"
                 }
               ],
               "quiz": [{"q": "...", "o": ["...", "...", "...", "..."], "a": "..."}],
@@ -149,10 +137,10 @@ app.post('/api/explain-topic', async (req, res) => {
                 if (scene.media_type === "image" || scene.media_type === "photo") {
                     try {
                         scene.media_type = "image";
-                        const finalImageUrl = await fetchCuratedImage(scene.academic_query || topic, scene.visual_metaphor || "education");
+                        // Now we only pass the academic_query to our new Pure Concept engine
+                        const finalImageUrl = await fetchCuratedImage(scene.academic_query || topic);
                         const fallbackUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80";
                         
-                        // CRITICAL FIX: Added this.onerror=null to prevent infinite loop crashes
                         scene.media_data = `<img src="${finalImageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="Educational Visual" onerror="this.onerror=null; this.src='${fallbackUrl}'" />`;
                     } catch (err) {
                         scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualization Unavailable ]</div>`;
@@ -186,7 +174,6 @@ app.post('/api/explain-topic', async (req, res) => {
 app.post('/api/tts', async (req, res) => {
     const { text, language } = req.body;
     
-    // SAFETY CATCH: Prevent 500 errors if text is missing
     if (!text || text.trim() === '') {
         return res.status(400).json({ error: "No text provided for TTS." });
     }
@@ -228,7 +215,6 @@ app.post('/api/tts', async (req, res) => {
         res.send(response.audioContent);
 
     } catch (error) {
-        // Log the exact Google Cloud error to Render so you know if it's a quota issue
         console.error("Google Cloud TTS Error Details:", error);
         res.status(500).json({ error: "Audio generation failed", details: error.message });
     }
