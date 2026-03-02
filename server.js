@@ -116,7 +116,13 @@ app.post('/api/explain-topic', async (req, res) => {
             - YOU ARE THE ART DIRECTOR. For every scene, choose the exact right medium:
               - REALITY ("image"): You MUST provide an 'academic_query' (Max 3 words, e.g., "Albert Einstein") AND a 1-word 'visual_metaphor' in English (e.g., "clock"). DO NOT write long descriptive paragraphs.
               - PROGRAMMING ("code"): Provide raw code snippet in 'media_data'.
-              - DIAGRAMS ("svg"): Provide precise, vibrant SVG code in 'media_data'. Text inside SVG should be in ${targetLanguage}. Use viewBox="0 0 800 400". NEVER overlap text and shapes.
+              - DIAGRAMS ("svg"): Provide precise SVG code in 'media_data'. 
+                CRITICAL SVG RULES FOR DARK MODE:
+                - The video background is PITCH BLACK. ALL text MUST use fill="white", be translated to ${targetLanguage}, and use font-size="24" or larger.
+                - Use highly visible, thick neon colors (cyan, magenta, lime, yellow) for stroke="...".
+                - Use viewBox="0 0 800 400". 
+                - PREVENT CUTOFF: Keep all shapes and text strictly inside the safe zone (x between 50 and 750, y between 50 and 350).
+                - Text and shapes MUST NOT overlap.
             
             Return ONLY this JSON structure:
             {

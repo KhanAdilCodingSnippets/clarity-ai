@@ -22,6 +22,7 @@ let currentConfidence = "";
 let currentLanguage = "English"; 
 
 let currentPlayId = 0; 
+let subtitlesVisible = true; // Added subtitle toggle state
 
 explainBtn.addEventListener('click', async () => {
     const topicInput = document.getElementById('topic-input');
@@ -96,6 +97,26 @@ function stopSpeech() {
     window.currentSpeechResolve = null;
 }
 
+// Subtitle Toggle Logic
+function toggleSubtitles() {
+    subtitlesVisible = !subtitlesVisible;
+    const ccBtn = document.getElementById('cc-btn');
+    
+    if (subtitlesVisible) {
+        subtitleBox.style.display = 'flex';
+        if (ccBtn) {
+            ccBtn.style.opacity = '1';
+            ccBtn.style.color = '#ffffff';
+        }
+    } else {
+        subtitleBox.style.display = 'none';
+        if (ccBtn) {
+            ccBtn.style.opacity = '0.4';
+            ccBtn.style.color = '#a0a0a0';
+        }
+    }
+}
+
 async function playCurrentScene() {
     let playId = ++currentPlayId;
 
@@ -104,7 +125,6 @@ async function playCurrentScene() {
         return;
     }
 
-    // CRITICAL FIX: Stop old animations BEFORE creating new ones!
     stopSpeech(); 
 
     let scene = clarityScenes[currentSceneIndex]; 
@@ -121,6 +141,9 @@ async function playCurrentScene() {
 
     if (progressBar) progressBar.style.width = `${((currentSceneIndex + 1) / clarityScenes.length) * 100}%`;
     if (subtitleBox) subtitleBox.innerText = scene.subtitle;
+    
+    // Ensure subtitle visibility state persists across scenes
+    if (!subtitlesVisible) subtitleBox.style.display = 'none';
     
     if (visualContainer) {
         visualContainer.innerHTML = `<div class="gsap-visual-target flex justify-center items-center w-full h-full">${displayMedia}</div>`;
@@ -146,12 +169,14 @@ async function playCurrentScene() {
                 { scale: 1.1, opacity: 1, duration: 8, ease: "none" }
             );
         } else if (scene.media_type === "svg") {
+            // Elegant cinematic SVG reveal (Blur to focus)
             gsap.fromTo(visualTarget,
-                { scale: 0.85, opacity: 0, y: 30 },
-                { scale: 1, opacity: 1, y: 0, duration: 1.2, ease: "back.out(1.5)" }
+                { scale: 0.9, opacity: 0, filter: "blur(10px)" },
+                { scale: 1, opacity: 1, filter: "blur(0px)", duration: 1.5, ease: "power3.out" }
             );
+            // Subtle breathing effect
             gsap.to(visualTarget, {
-                y: -15, duration: 2.5, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 1.2
+                scale: 1.03, duration: 4, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 1.5
             });
         } else if (scene.media_type === "code") {
             gsap.fromTo(visualTarget,
@@ -280,6 +305,7 @@ function endLesson() {
     if (visualContainer) visualContainer.innerHTML = '';
     
     if (subtitleBox) {
+        subtitleBox.style.display = 'flex'; // Ensure it's visible for the final message
         subtitleBox.innerHTML = `
             <div class="flex flex-col items-center justify-center fade-in">
                 <div class="text-[10px] md:text-xs font-bold text-green-400 uppercase tracking-[0.2em] mb-1 md:mb-2 flex items-center gap-1 md:gap-2 drop-shadow-md text-center">
