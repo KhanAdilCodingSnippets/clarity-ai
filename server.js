@@ -145,7 +145,9 @@ app.post('/api/explain-topic', async (req, res) => {
                         scene.media_type = "image";
                         const finalImageUrl = await fetchCuratedImage(scene.academic_query || topic, scene.visual_metaphor || "education");
                         const fallbackUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80";
-                        scene.media_data = `<img src="${finalImageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="Educational Visual" onerror="this.src='${fallbackUrl}'" />`;
+                        
+                        // CRITICAL FIX: Added this.onerror=null to prevent infinite loop crashes
+                        scene.media_data = `<img src="${finalImageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="Educational Visual" onerror="this.onerror=null; this.src='${fallbackUrl}'" />`;
                     } catch (err) {
                         scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualization Unavailable ]</div>`;
                     }
