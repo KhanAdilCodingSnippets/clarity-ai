@@ -53,7 +53,6 @@ app.post('/api/explain-topic', async (req, res) => {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            // THE ULTIMATE PROMPT: Pronunciation, Code Correction, and AI Images
             const prompt = `Act as a world-class educational mentor. Your name is Clarity.
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience.
             
@@ -109,16 +108,30 @@ app.post('/api/explain-topic', async (req, res) => {
             
             let lessonData = JSON.parse(response.text());
 
-            // NEW: Pollinations.ai Image Generation Loop (No API Key Needed!)
+            // ROBUST AI IMAGE GENERATION LOOP
             for (let scene of lessonData.scenes) {
-                // Support legacy "photo" type just in case the AI slips up
                 if (scene.media_type === "image" || scene.media_type === "photo") {
                     try {
-                        const safePrompt = encodeURIComponent(`${scene.media_data}, educational diagram, high quality, dark cinematic background, no text`);
-                        const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true`;
+                        // Sanitize the AI output: Strip accidental HTML tags or quotes
+                        let cleanPrompt = scene.media_data.replace(/<[^>]*>?/gm, '').replace(/["[\]{}]/g, '').trim();
+                        
+                        // Cap the length so the URL is never invalid
+                        if (cleanPrompt.length > 250) {
+                            cleanPrompt = cleanPrompt.substring(0, 250);
+                        }
+
+                        // Add a random seed to bypass aggressive browser caching
+                        const randomSeed = Math.floor(Math.random() * 100000);
+                        
+                        // Construct the safe URL
+                        const safePrompt = encodeURIComponent(`${cleanPrompt}, high quality 3d educational diagram, clean dark background`);
+                        const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true&seed=${randomSeed}`;
+                        
+                        // Ultimate Failsafe: The 'onerror' fallback
+                        const fallbackUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80";
                         
                         scene.media_type = "image";
-                        scene.media_data = `<img src="${imageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="AI Generated Concept" />`;
+                        scene.media_data = `<img src="${imageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="AI Generated Concept" onerror="this.src='${fallbackUrl}'" />`;
                     } catch (err) {
                         scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualization Error ]</div>`;
                     }
@@ -153,7 +166,7 @@ app.post('/api/tts', async (req, res) => {
         return res.status(500).json({ error: "TTS Client not configured." });
     }
 
-    // THE REGEX SANITIZER: Makes it sound human!
+    // THE REGEX SANITIZER: Makes it sound human
     const cleanText = text
         .replace(/_/g, ' ')           
         .replace(/["*`'”"«»]/g, '')   
