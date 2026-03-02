@@ -28,8 +28,6 @@ const apiKeys = [
     process.env.GEMINI_KEY_4
 ];
 
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY || "CZ4nOZZBYcF0s1BitZYU8C8IBCK5n1S4S34b1Au21fzjYCdaliQwRoxQ";
-
 let keyIndex = 0;
 
 app.use(cors({ origin: '*' }));
@@ -37,7 +35,6 @@ app.use(express.json());
 app.use(express.static('public'));
 
 app.post('/api/explain-topic', async (req, res) => {
-    // NEW: We now extract language from the frontend
     const { topic, level, language } = req.body;
     const targetLanguage = language || 'English';
 
@@ -56,21 +53,29 @@ app.post('/api/explain-topic', async (req, res) => {
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            // MULTILINGUAL PROMPT: Translates text but keeps Pexels keywords in English
+            // THE ULTIMATE PROMPT: Pronunciation, Code Correction, and AI Images
             const prompt = `Act as a world-class educational mentor. Your name is Clarity.
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience.
             
-            CRITICAL TRANSLATION RULE: You MUST generate ALL subtitles, quiz questions, and the debate question strictly in the ${targetLanguage} language.
+            CRITICAL TRANSLATION & AUDIO RULE: 
+            1. You MUST generate ALL subtitles, quiz questions, and the debate question strictly in the ${targetLanguage} language.
+            2. The "subtitle" field is read aloud by a Text-to-Speech engine. Write it EXACTLY as a human would speak. Do NOT use quotation marks, underscores, backticks, or camelCase. For example, instead of writing "hello_world", write "hello world".
+            
+            SPECIAL RULE FOR CODE CORRECTION:
+            If the user's topic involves fixing, debugging, or writing code:
+            - Explain the bugs and the logic of the fix in the spoken subtitles.
+            - You MUST include a scene where the 'media_type' is "code" and 'media_data' contains the final, fully corrected raw code.
+            - In the final concluding scene, the subtitle MUST explicitly say: "You can find the corrected code in the notes section." (Translate this to ${targetLanguage} if necessary).
             
             SCENE 1 (GREETING): 
-            - Subtitle: "Welcome to Clarity. Today our objective is to master the core principles of ${topic}." (Translate this to ${targetLanguage}).
+            - Subtitle: "Welcome to Clarity. Today our objective is to master the core principles of ${topic}." (Translate this to ${targetLanguage} phonetically).
             - media_type: "image"
-            - media_data: "<img src='https://i.ibb.co/mVyKpB5d/Screenshot-2026-03-01-at-10-31-00-AM.png' alt='Clarity Logo' class='w-full h-full object-contain drop-shadow-2xl' />"
+            - media_data: "A hyper-realistic cinematic 3D rendering of the concept: ${topic}, highly detailed, educational illustration, dark background, neon accents, 8k resolution"
             
             FOLLOWING SCENES (8-10 scenes total):
             - YOU ARE THE DIRECTOR. Choose the exact right medium for each scene:
-              - REALITY: Use "photo". IMPORTANT: Even though the subtitle is in ${targetLanguage}, the Pexels search keyword in media_data MUST BE IN ENGLISH (e.g., "apple", "space", "computer").
-              - PROGRAMMING/CODE: Use "code" and provide the raw code snippet.
+              - REALITY: Use "image". In media_data, write a highly descriptive, detailed visual prompt for an AI image generator in ENGLISH (e.g., "A hyper-realistic 3D rendering of a human heart showing the ventricles, dark background, cinematic lighting"). Do NOT just write a single word.
+              - PROGRAMMING/CODE: Use "code" and provide the raw code snippet in media_data.
               - THEORY/DIAGRAMS: Use "svg". Text inside the SVG should be in ${targetLanguage}.
             
             CRITICAL SVG SPATIAL RULES (NO OVERLAPPING):
@@ -90,9 +95,9 @@ app.post('/api/explain-topic', async (req, res) => {
               "confidence_score": "98%",
               "scenes": [
                 {
-                  "subtitle": "Short detailed sentence translated to ${targetLanguage} (max 20 words).",
-                  "media_type": "svg" or "photo" or "image" or "code",
-                  "media_data": "SVG code OR English search keyword OR image tag OR raw code"
+                  "subtitle": "Short detailed phonetic sentence translated to ${targetLanguage} (max 20 words).",
+                  "media_type": "svg" or "image" or "code",
+                  "media_data": "SVG code OR English descriptive image prompt OR raw code"
                 }
               ],
               "quiz": [{"q": "...", "o": ["...", "...", "...", "..."], "a": "..."}],
@@ -104,22 +109,18 @@ app.post('/api/explain-topic', async (req, res) => {
             
             let lessonData = JSON.parse(response.text());
 
+            // NEW: Pollinations.ai Image Generation Loop (No API Key Needed!)
             for (let scene of lessonData.scenes) {
-                if (scene.media_type === "photo") {
+                // Support legacy "photo" type just in case the AI slips up
+                if (scene.media_type === "image" || scene.media_type === "photo") {
                     try {
-                        const pexelsRes = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(scene.media_data)}&per_page=1`, {
-                            headers: { Authorization: PEXELS_API_KEY }
-                        });
-                        const pexelsData = await pexelsRes.json();
+                        const safePrompt = encodeURIComponent(`${scene.media_data}, educational diagram, high quality, dark cinematic background, no text`);
+                        const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true`;
                         
-                        if (pexelsData.photos && pexelsData.photos.length > 0) {
-                            const imageUrl = pexelsData.photos[0].src.landscape;
-                            scene.media_data = `<img src="${imageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="${scene.media_data}" />`;
-                        } else {
-                            scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualizing: ${scene.media_data} ]</div>`;
-                        }
+                        scene.media_type = "image";
+                        scene.media_data = `<img src="${imageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="AI Generated Concept" />`;
                     } catch (err) {
-                        scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ System Error ]</div>`;
+                        scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualization Error ]</div>`;
                     }
                 }
             }
@@ -146,14 +147,18 @@ app.post('/api/explain-topic', async (req, res) => {
 });
 
 app.post('/api/tts', async (req, res) => {
-    // NEW: Extract language alongside text
     const { text, language } = req.body;
     
     if (!ttsClient) {
         return res.status(500).json({ error: "TTS Client not configured." });
     }
 
-    // MAP UI LANGUAGES TO GOOGLE CLOUD REGIONAL VOICES
+    // THE REGEX SANITIZER: Makes it sound human!
+    const cleanText = text
+        .replace(/_/g, ' ')           
+        .replace(/["*`'”"«»]/g, '')   
+        .replace(/([a-z])([A-Z])/g, '$1 $2'); 
+
     const voiceMap = {
         "English": { languageCode: 'en-IN', name: 'en-IN-Neural2-A' },
         "Hindi": { languageCode: 'hi-IN', name: 'hi-IN-Neural2-A' },
@@ -171,7 +176,7 @@ app.post('/api/tts', async (req, res) => {
 
     try {
         const request = {
-            input: { text: text },
+            input: { text: cleanText }, 
             voice: voiceConfig,
             audioConfig: { audioEncoding: 'MP3' },
         };
