@@ -182,7 +182,7 @@ app.post('/api/tts', async (req, res) => {
 
     const voiceMap = {
         "English": { languageCode: 'en-IN', name: 'en-IN-Neural2-A' },
-        "Hindi": { language  Code: 'hi-IN', name: 'hi-IN-Neural2-A' },
+        "Hindi": { languageCode: 'hi-IN', name: 'hi-IN-Neural2-A' },
         "Gujarati": { languageCode: 'gu-IN', name: 'gu-IN-Standard-A' },
         "Tamil": { languageCode: 'ta-IN', name: 'ta-IN-Standard-A' },
         "Telugu": { languageCode: 'te-IN', name: 'te-IN-Standard-A' },
