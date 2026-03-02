@@ -42,7 +42,8 @@ explainBtn.addEventListener('click', async () => {
     if (progressBar) progressBar.style.width = '0%';
     
     try {
-        const response = await fetch('http://localhost:3000/api/explain-topic', {
+        // Switched to production Render URL
+        const response = await fetch('https://clarity-ai-dejg.onrender.com/api/explain-topic', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
@@ -88,7 +89,6 @@ function stopSpeech() {
     
     clearTimeout(sceneTimeout);
     
-    // Kill GSAP animations if user skips to prevent layout bugs
     if (typeof gsap !== "undefined") {
         gsap.killTweensOf(subtitleBox);
         if (visualContainer.firstElementChild) gsap.killTweensOf(visualContainer.firstElementChild);
@@ -121,7 +121,6 @@ async function playCurrentScene() {
     if (subtitleBox) subtitleBox.innerText = scene.subtitle;
     
     if (visualContainer) {
-        // Removed static fade-in CSS class so GSAP can take over completely
         visualContainer.innerHTML = `<div class="gsap-visual-target flex justify-center items-center w-full h-full">${displayMedia}</div>`;
         const svg = visualContainer.querySelector('svg');
         if (svg) {
@@ -131,25 +130,20 @@ async function playCurrentScene() {
         }
     }
 
-    // --- THE GSAP ANIMATION ENGINE ---
     if (typeof gsap !== "undefined") {
-        // 1. Cinematic Subtitle Slide-Up
         gsap.fromTo(subtitleBox, 
             { y: 20, opacity: 0 }, 
             { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }
         );
 
-        // 2. Programmatic Visual Animations
         const visualTarget = visualContainer.querySelector('.gsap-visual-target');
         
         if (scene.media_type === "image") {
-            // Ken Burns Effect for images (slow continuous zoom)
             gsap.fromTo(visualTarget,
                 { scale: 1, opacity: 0 },
                 { scale: 1.1, opacity: 1, duration: 8, ease: "none" }
             );
         } else if (scene.media_type === "svg") {
-            // Pop and float for diagrams
             gsap.fromTo(visualTarget,
                 { scale: 0.85, opacity: 0, y: 30 },
                 { scale: 1, opacity: 1, y: 0, duration: 1.2, ease: "back.out(1.5)" }
@@ -158,13 +152,11 @@ async function playCurrentScene() {
                 y: -15, duration: 2.5, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 1.2
             });
         } else if (scene.media_type === "code") {
-            // Slide in for code
             gsap.fromTo(visualTarget,
                 { x: -30, opacity: 0 },
                 { x: 0, opacity: 1, duration: 0.8, ease: "power2.out" }
             );
         } else {
-            // Fallback fade
             gsap.fromTo(visualTarget, { opacity: 0 }, { opacity: 1, duration: 1 });
         }
     }
@@ -176,7 +168,8 @@ async function playCurrentScene() {
             window.currentSpeechResolve = resolve;
             
             try {
-                const ttsResponse = await fetch('http://localhost:3000/api/tts', {
+                // Switched to production Render URL
+                const ttsResponse = await fetch('https://clarity-ai-dejg.onrender.com/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: scene.subtitle, language: currentLanguage })
@@ -318,9 +311,13 @@ function setupInteractiveLoop(data) {
     let notesHTML = `
         <div class="mb-6 md:mb-12 text-center px-4">
             <h2 class="text-2xl md:text-4xl font-black tracking-tight text-gray-900 mb-2 md:mb-4">Session Notes</h2>
-            <p class="text-sm md:text-lg text-gray-500 font-medium">A complete review of your Clarity session on <span class="text-black font-bold">${currentTopic}</span>.</p>
+            <p class="text-sm md:text-lg text-gray-500 font-medium mb-6">A complete review of your Clarity session on <span class="text-black font-bold">${currentTopic}</span>.</p>
+            <button onclick="downloadNotes()" class="bg-gray-100 hover:bg-gray-200 text-black px-6 py-3 rounded-full text-sm font-bold transition flex items-center justify-center gap-2 mx-auto shadow-sm border border-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download PDF Guide
+            </button>
         </div>
-        <div class="space-y-4 md:space-y-10 px-4 md:px-0">
+        <div class="space-y-4 md:space-y-10 px-4 md:px-0" id="pdf-export-area">
     `;
     
     data.scenes.forEach((scene, index) => {
@@ -414,4 +411,17 @@ function showTab(id) {
     if (activeTab) {
         activeTab.classList.remove('hidden');
     }
+}
+
+// NEW: PDF Export Function
+function downloadNotes() {
+    const element = document.getElementById('pdf-export-area');
+    const opt = {
+        margin:       0.5,
+        filename:     `Clarity_Study_Guide_${currentTopic.replace(/\s+/g, '_')}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
 }
