@@ -28,11 +28,48 @@ const apiKeys = [
     process.env.GEMINI_KEY_4
 ];
 
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY || "CZ4nOZZBYcF0s1BitZYU8C8IBCK5n1S4S34b1Au21fzjYCdaliQwRoxQ";
+
 let keyIndex = 0;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.static('public'));
+
+// THE WATERFALL CURATION ENGINE
+async function fetchCuratedImage(academicQuery, visualMetaphor) {
+    // TIER 1: WIKIPEDIA (Best for historical figures, maps, and textbook diagrams)
+    try {
+        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(academicQuery)}&prop=pageimages&format=json&pithumbsize=800`);
+        const wikiData = await wikiRes.json();
+        const pages = wikiData.query.pages;
+        const pageId = Object.keys(pages)[0];
+        
+        if (pageId !== "-1" && pages[pageId].thumbnail) {
+            console.log(`[Curation Engine] Sourced from Wikipedia: ${academicQuery}`);
+            return pages[pageId].thumbnail.source;
+        }
+    } catch(e) { console.warn("Wikipedia fetch failed, falling back..."); }
+
+    // TIER 2: PEXELS (Best for real-world visual metaphors)
+    try {
+        const pexelsRes = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(visualMetaphor)}&per_page=1`, {
+            headers: { Authorization: PEXELS_API_KEY }
+        });
+        const pexelsData = await pexelsRes.json();
+        
+        if (pexelsData.photos && pexelsData.photos.length > 0) {
+            console.log(`[Curation Engine] Sourced from Pexels: ${visualMetaphor}`);
+            return pexelsData.photos[0].src.landscape;
+        }
+    } catch(e) { console.warn("Pexels fetch failed, falling back..."); }
+
+    // TIER 3: POLLINATIONS AI (Ultimate Failsafe for abstract concepts)
+    console.log(`[Curation Engine] Generating AI Image for: ${academicQuery}`);
+    const randomSeed = Math.floor(Math.random() * 100000);
+    const safePrompt = encodeURIComponent(`${academicQuery}, high quality educational diagram, cinematic lighting`);
+    return `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true&seed=${randomSeed}`;
+}
 
 app.post('/api/explain-topic', async (req, res) => {
     const { topic, level, language } = req.body;
@@ -57,46 +94,31 @@ app.post('/api/explain-topic', async (req, res) => {
             Explain "${topic}" specifically tailored for a ${level || 'Intermediate'} audience.
             
             CRITICAL TRANSLATION & AUDIO RULE: 
-            1. You MUST generate ALL subtitles, quiz questions, and the debate question strictly in the ${targetLanguage} language.
-            2. The "subtitle" field is read aloud by a Text-to-Speech engine. Write it EXACTLY as a human would speak. Do NOT use quotation marks, underscores, backticks, or camelCase. For example, instead of writing "hello_world", write "hello world".
-            
-            SPECIAL RULE FOR CODE CORRECTION:
-            If the user's topic involves fixing, debugging, or writing code:
-            - Explain the bugs and the logic of the fix in the spoken subtitles.
-            - You MUST include a scene where the 'media_type' is "code" and 'media_data' contains the final, fully corrected raw code.
-            - In the final concluding scene, the subtitle MUST explicitly say: "You can find the corrected code in the notes section." (Translate this to ${targetLanguage} if necessary).
+            1. Generate ALL subtitles and quiz questions strictly in the ${targetLanguage} language.
+            2. The "subtitle" field is read aloud. Write it EXACTLY as a human would speak. Do NOT use quotation marks, underscores, backticks, or camelCase. 
             
             SCENE 1 (GREETING): 
-            - Subtitle: "Welcome to Clarity. Today our objective is to master the core principles of ${topic}." (Translate this to ${targetLanguage} phonetically).
+            - Subtitle: "Welcome to Clarity. Today our objective is to master the core principles of ${topic}."
             - media_type: "image"
-            - media_data: "A hyper-realistic cinematic 3D rendering of the concept: ${topic}, highly detailed, educational illustration, dark background, neon accents, 8k resolution"
+            - academic_query: "${topic}"
+            - visual_metaphor: "education"
             
             FOLLOWING SCENES (8-10 scenes total):
-            - YOU ARE THE DIRECTOR. Choose the exact right medium for each scene:
-              - REALITY: Use "image". In media_data, write a highly descriptive, detailed visual prompt for an AI image generator in ENGLISH (e.g., "A hyper-realistic 3D rendering of a human heart showing the ventricles, dark background, cinematic lighting"). Do NOT just write a single word.
-              - PROGRAMMING/CODE: Use "code" and provide the raw code snippet in media_data.
-              - THEORY/DIAGRAMS: Use "svg". Text inside the SVG should be in ${targetLanguage}.
-            
-            CRITICAL SVG SPATIAL RULES (NO OVERLAPPING):
-            - Use viewBox="0 0 800 400".
-            - DO NOT let text and shapes overlap. 
-            - Place all visual shapes STRICTLY in the center (y coordinates between 100 and 300).
-            - Place all text labels STRICTLY at the very top (y=40) or very bottom (y=380).
-            - Use vibrant neon colors on a transparent background.
-            
-            INTERACTIVE DATA (In ${targetLanguage}):
-            - "quiz": 6 multiple choice questions appropriate for the ${level} difficulty.
-            - "debate": 1 deep, philosophical question.
-            - "confidence_score": Provide a confidence percentage string (e.g., "98%").
+            - YOU ARE THE ART DIRECTOR. For every scene, choose the exact right medium:
+              - REALITY ("image"): You MUST provide an 'academic_query' (e.g., "Albert Einstein") AND a 1-word 'visual_metaphor' in English (e.g., "clock").
+              - PROGRAMMING ("code"): Provide raw code snippet in 'media_data'.
+              - DIAGRAMS ("svg"): Provide precise, vibrant SVG code in 'media_data'. Text inside SVG should be in ${targetLanguage}. Use viewBox="0 0 800 400". NEVER overlap text and shapes.
             
             Return ONLY this JSON structure:
             {
               "confidence_score": "98%",
               "scenes": [
                 {
-                  "subtitle": "Short detailed phonetic sentence translated to ${targetLanguage} (max 20 words).",
+                  "subtitle": "Spoken sentence translated to ${targetLanguage}.",
                   "media_type": "svg" or "image" or "code",
-                  "media_data": "SVG code OR English descriptive image prompt OR raw code"
+                  "media_data": "SVG code OR raw code snippet (Leave empty if media_type is image)",
+                  "academic_query": "Exact noun for Wikipedia (Leave empty if code/svg)",
+                  "visual_metaphor": "1-word real world object for Pexels (Leave empty if code/svg)"
                 }
               ],
               "quiz": [{"q": "...", "o": ["...", "...", "...", "..."], "a": "..."}],
@@ -108,33 +130,20 @@ app.post('/api/explain-topic', async (req, res) => {
             
             let lessonData = JSON.parse(response.text());
 
-            // ROBUST AI IMAGE GENERATION LOOP
+            // THE PROCESSING PIPELINE
             for (let scene of lessonData.scenes) {
                 if (scene.media_type === "image" || scene.media_type === "photo") {
                     try {
-                        // Sanitize the AI output: Strip accidental HTML tags or quotes
-                        let cleanPrompt = scene.media_data.replace(/<[^>]*>?/gm, '').replace(/["[\]{}]/g, '').trim();
-                        
-                        // Cap the length so the URL is never invalid
-                        if (cleanPrompt.length > 250) {
-                            cleanPrompt = cleanPrompt.substring(0, 250);
-                        }
-
-                        // Add a random seed to bypass aggressive browser caching
-                        const randomSeed = Math.floor(Math.random() * 100000);
-                        
-                        // Construct the safe URL
-                        const safePrompt = encodeURIComponent(`${cleanPrompt}, high quality 3d educational diagram, clean dark background`);
-                        const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true&seed=${randomSeed}`;
-                        
-                        // Ultimate Failsafe: The 'onerror' fallback
-                        const fallbackUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80";
-                        
                         scene.media_type = "image";
-                        scene.media_data = `<img src="${imageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="AI Generated Concept" onerror="this.src='${fallbackUrl}'" />`;
+                        // Execute the Waterfall Curation Engine
+                        const finalImageUrl = await fetchCuratedImage(scene.academic_query || topic, scene.visual_metaphor || "education");
+                        scene.media_data = `<img src="${finalImageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="Educational Visual" />`;
                     } catch (err) {
-                        scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualization Error ]</div>`;
+                        scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualization Unavailable ]</div>`;
                     }
+                } else if (scene.media_type === "svg") {
+                     // SVG Sanitation to prevent rendering breaks
+                     scene.media_data = scene.media_data.replace(/```xml|```svg|```/g, '').trim();
                 }
             }
             
@@ -166,7 +175,6 @@ app.post('/api/tts', async (req, res) => {
         return res.status(500).json({ error: "TTS Client not configured." });
     }
 
-    // THE REGEX SANITIZER: Makes it sound human
     const cleanText = text
         .replace(/_/g, ' ')           
         .replace(/["*`'”"«»]/g, '')   
@@ -174,7 +182,7 @@ app.post('/api/tts', async (req, res) => {
 
     const voiceMap = {
         "English": { languageCode: 'en-IN', name: 'en-IN-Neural2-A' },
-        "Hindi": { languageCode: 'hi-IN', name: 'hi-IN-Neural2-A' },
+        "Hindi": { language  Code: 'hi-IN', name: 'hi-IN-Neural2-A' },
         "Gujarati": { languageCode: 'gu-IN', name: 'gu-IN-Standard-A' },
         "Tamil": { languageCode: 'ta-IN', name: 'ta-IN-Standard-A' },
         "Telugu": { languageCode: 'te-IN', name: 'te-IN-Standard-A' },
