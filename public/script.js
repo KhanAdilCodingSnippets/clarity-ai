@@ -21,7 +21,6 @@ let currentTopic = "";
 let currentConfidence = ""; 
 let currentLanguage = "English"; 
 
-// NEW: This completely prevents overlapping audio and double triggers
 let currentPlayId = 0; 
 
 explainBtn.addEventListener('click', async () => {
@@ -43,7 +42,7 @@ explainBtn.addEventListener('click', async () => {
     if (progressBar) progressBar.style.width = '0%';
     
     try {
-        const response = await fetch('https://clarity-ai-dejg.onrender.com/api/explain-topic', {
+        const response = await fetch('http://localhost:3000/api/explain-topic', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
@@ -89,12 +88,16 @@ function stopSpeech() {
     
     clearTimeout(sceneTimeout);
     
-    // CRITICAL FIX: Do NOT resolve the promise here. Let the currentPlayId handle thread cancellation.
+    // Kill GSAP animations if user skips to prevent layout bugs
+    if (typeof gsap !== "undefined") {
+        gsap.killTweensOf(subtitleBox);
+        if (visualContainer.firstElementChild) gsap.killTweensOf(visualContainer.firstElementChild);
+    }
+    
     window.currentSpeechResolve = null;
 }
 
 async function playCurrentScene() {
-    // Generate a unique ID for this exact playback loop
     let playId = ++currentPlayId;
 
     if (currentSceneIndex >= clarityScenes.length) {
@@ -118,13 +121,51 @@ async function playCurrentScene() {
     if (subtitleBox) subtitleBox.innerText = scene.subtitle;
     
     if (visualContainer) {
-        visualContainer.innerHTML = `<div class="fade-in scale-100 flex justify-center items-center w-full h-full">${displayMedia}</div>`;
+        // Removed static fade-in CSS class so GSAP can take over completely
+        visualContainer.innerHTML = `<div class="gsap-visual-target flex justify-center items-center w-full h-full">${displayMedia}</div>`;
         const svg = visualContainer.querySelector('svg');
         if (svg) {
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
-            // Ensure SVGs fit perfectly in the YouTube style container
             svg.style.maxHeight = '100%'; 
+        }
+    }
+
+    // --- THE GSAP ANIMATION ENGINE ---
+    if (typeof gsap !== "undefined") {
+        // 1. Cinematic Subtitle Slide-Up
+        gsap.fromTo(subtitleBox, 
+            { y: 20, opacity: 0 }, 
+            { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }
+        );
+
+        // 2. Programmatic Visual Animations
+        const visualTarget = visualContainer.querySelector('.gsap-visual-target');
+        
+        if (scene.media_type === "image") {
+            // Ken Burns Effect for images (slow continuous zoom)
+            gsap.fromTo(visualTarget,
+                { scale: 1, opacity: 0 },
+                { scale: 1.1, opacity: 1, duration: 8, ease: "none" }
+            );
+        } else if (scene.media_type === "svg") {
+            // Pop and float for diagrams
+            gsap.fromTo(visualTarget,
+                { scale: 0.85, opacity: 0, y: 30 },
+                { scale: 1, opacity: 1, y: 0, duration: 1.2, ease: "back.out(1.5)" }
+            );
+            gsap.to(visualTarget, {
+                y: -15, duration: 2.5, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 1.2
+            });
+        } else if (scene.media_type === "code") {
+            // Slide in for code
+            gsap.fromTo(visualTarget,
+                { x: -30, opacity: 0 },
+                { x: 0, opacity: 1, duration: 0.8, ease: "power2.out" }
+            );
+        } else {
+            // Fallback fade
+            gsap.fromTo(visualTarget, { opacity: 0 }, { opacity: 1, duration: 1 });
         }
     }
 
@@ -135,7 +176,7 @@ async function playCurrentScene() {
             window.currentSpeechResolve = resolve;
             
             try {
-                const ttsResponse = await fetch('https://clarity-ai-dejg.onrender.com/api/tts', {
+                const ttsResponse = await fetch('http://localhost:3000/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: scene.subtitle, language: currentLanguage })
@@ -146,14 +187,12 @@ async function playCurrentScene() {
                 const blob = await ttsResponse.blob();
                 const audioUrl = URL.createObjectURL(blob);
                 
-                // If user clicked pause or next while fetching, kill this thread!
                 if (!isPlaying || playId !== currentPlayId) return resolve(); 
 
                 window.currentAudioObj = new Audio(audioUrl);
                 
                 window.currentAudioObj.play().catch(e => console.error("Play blocked:", e));
                 
-                // Use addEventListener for more reliable end detection
                 window.currentAudioObj.addEventListener('ended', () => {
                     if (window.currentSpeechResolve) resolve();
                 });
@@ -181,14 +220,13 @@ async function playCurrentScene() {
 
         window.currentSpeechResolve = null;
 
-        // Ensure this is still the active scene before triggering the next one
         if (isPlaying && playId === currentPlayId) {
             sceneTimeout = setTimeout(() => {
                 if (isPlaying && playId === currentPlayId) {
                     currentSceneIndex++;
                     playCurrentScene();
                 }
-            }, 100); // 100ms creates a seamless video transition
+            }, 100); 
         }
     }
 }
@@ -208,7 +246,7 @@ function togglePlay() {
 
 function nextScene() {
     if (currentSceneIndex < clarityScenes.length - 1) {
-        currentPlayId++; // Kill the old thread immediately
+        currentPlayId++; 
         stopSpeech();
         currentSceneIndex++;
         isPlaying = true;
@@ -221,7 +259,7 @@ function nextScene() {
 
 function prevScene() {
     if (currentSceneIndex > 0) {
-        currentPlayId++; // Kill the old thread immediately
+        currentPlayId++; 
         stopSpeech();
         currentSceneIndex--;
         isPlaying = true;
@@ -240,7 +278,7 @@ function replayLesson() {
 }
 
 function endLesson() {
-    currentPlayId++; // Lock the thread
+    currentPlayId++; 
     stopSpeech();
     isPlaying = false;
     bgMusic.pause();

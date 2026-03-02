@@ -97,6 +97,12 @@ app.post('/api/explain-topic', async (req, res) => {
             1. Generate ALL subtitles and quiz questions strictly in the ${targetLanguage} language.
             2. The "subtitle" field is read aloud. Write it EXACTLY as a human would speak. Do NOT use quotation marks, underscores, backticks, or camelCase. 
             
+            SPECIAL RULE FOR CODE CORRECTION:
+            If the user's topic involves fixing, debugging, or writing code:
+            - Explain the bugs and the logic of the fix in the spoken subtitles.
+            - You MUST include a scene where the 'media_type' is "code" and 'media_data' contains the final, fully corrected raw code.
+            - In the final concluding scene, the subtitle MUST explicitly say: "You can find the corrected code in the notes section."
+            
             SCENE 1 (GREETING): 
             - Subtitle: "Welcome to Clarity. Today our objective is to master the core principles of ${topic}."
             - media_type: "image"
@@ -137,7 +143,10 @@ app.post('/api/explain-topic', async (req, res) => {
                         scene.media_type = "image";
                         // Execute the Waterfall Curation Engine
                         const finalImageUrl = await fetchCuratedImage(scene.academic_query || topic, scene.visual_metaphor || "education");
-                        scene.media_data = `<img src="${finalImageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="Educational Visual" />`;
+                        
+                        // Added onerror fallback for ultimate stability
+                        const fallbackUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80";
+                        scene.media_data = `<img src="${finalImageUrl}" class="w-full h-full object-contain rounded-xl drop-shadow-2xl" alt="Educational Visual" onerror="this.src='${fallbackUrl}'" />`;
                     } catch (err) {
                         scene.media_data = `<div class="text-gray-400 font-medium text-xl bg-gray-900 p-8 rounded-3xl flex items-center justify-center h-full border border-gray-800">[ Visualization Unavailable ]</div>`;
                     }
