@@ -51,14 +51,14 @@ async function fetchCuratedImage(academicQuery) {
         }
     } catch(e) {}
 
-    // TIER 2: THE AI INFOGRAPHIC ENGINE (Perfect for Science, Math, and Concepts)
+    // TIER 2: THE AI INFOGRAPHIC ENGINE (Upgraded for "Perfect" 3D Renders)
     console.log(`[Engine] Generating Custom AI Diagram for: ${cleanQuery}`);
     
     let shortPrompt = cleanQuery.substring(0, 70).replace(/[^a-zA-Z0-9 ]/g, '');
     const randomSeed = Math.floor(Math.random() * 100000);
     
-    // We force the AI to draw a textbook-style diagram, not a realistic photo
-    const styleModifiers = "flat vector illustration, educational diagram, minimal infographic, dark background, bold neon colors";
+    // Upgraded modifiers to ensure premium, high-budget visuals that match a dark theme
+    const styleModifiers = "masterpiece, highly detailed educational 3D render, cinematic lighting, dark background, subtle glowing neon accents, 8k resolution, no text";
     const safePrompt = encodeURIComponent(`${shortPrompt}, ${styleModifiers}`);
     
     return `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true&seed=${randomSeed}`;
@@ -102,16 +102,20 @@ app.post('/api/explain-topic', async (req, res) => {
             - academic_query: "${topic}"
             
             FOLLOWING SCENES (8-10 scenes total):
-            - YOU ARE THE ART DIRECTOR. For every scene, choose the exact right medium:
-              - REALITY ("image"): You MUST provide an 'academic_query' (Max 3 words, e.g., "Albert Einstein" or "Quantum Physics"). DO NOT write long descriptive paragraphs.
-              - PROGRAMMING ("code"): Provide raw code snippet in 'media_data'.
-              - DIAGRAMS ("svg"): Provide precise SVG code in 'media_data'. 
-                CRITICAL SVG RULES FOR DARK MODE:
-                - The video background is PITCH BLACK. ALL text MUST use fill="white", be translated to ${targetLanguage}, and use font-size="24" or larger.
-                - Use highly visible, thick neon colors (cyan, magenta, lime, yellow) for stroke="...".
-                - Use viewBox="0 0 800 400". 
-                - PREVENT CUTOFF: Keep all shapes and text strictly inside the safe zone (x between 50 and 750, y between 50 and 350).
-                - Text and shapes MUST NOT overlap.
+            - YOU ARE THE ART DIRECTOR. YOU MUST STRONGLY PREFER SVGs (Use for 80-90% of scenes).
+            
+            - DIAGRAMS & TEXT ("svg"): Use this for ALMOST EVERYTHING. Explanations, bullet points, flowcharts, math, and concepts. 
+              CRITICAL SVG RULES FOR DARK MODE:
+              - The video background is PITCH BLACK. ALL text MUST use fill="white", be translated to ${targetLanguage}, and use font-size="24" or larger.
+              - Use highly visible, thick neon colors (cyan, magenta, lime, yellow) for stroke="...".
+              - Use viewBox="0 0 800 400". 
+              - PREVENT CUTOFF: Keep all shapes and text strictly inside the safe zone (x between 50 and 750, y between 50 and 350).
+              - Text and shapes MUST NOT overlap.
+              
+            - REALITY ("image"): USE SPARINGLY (1-2 times max per lesson). ONLY use when a complex real-world visual is strictly required (e.g., a galaxy, a historical artifact, biological tissue). 
+              - You MUST provide an 'academic_query' (Max 3 words, e.g., "Albert Einstein" or "DNA Double Helix"). DO NOT write long descriptive paragraphs.
+              
+            - PROGRAMMING ("code"): Provide raw code snippet in 'media_data'.
             
             Return ONLY this JSON structure:
             {
@@ -137,7 +141,6 @@ app.post('/api/explain-topic', async (req, res) => {
                 if (scene.media_type === "image" || scene.media_type === "photo") {
                     try {
                         scene.media_type = "image";
-                        // Now we only pass the academic_query to our new Pure Concept engine
                         const finalImageUrl = await fetchCuratedImage(scene.academic_query || topic);
                         const fallbackUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80";
                         
