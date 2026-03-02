@@ -34,31 +34,30 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.static('public'));
 
-// THE STREAMLINED EDUCATIONAL CURATION ENGINE
+// THE UPGRADED BROAD-SEARCH CURATION ENGINE
 async function fetchCuratedImage(academicQuery) {
-    const cleanQuery = (academicQuery || "education").replace(/<[^>]*>?/gm, '').trim();
+    const cleanQuery = (academicQuery || "science").replace(/<[^>]*>?/gm, '').trim();
 
-    // TIER 1: WIKIPEDIA (Perfect for History, Geography, and Famous People)
+    // TIER 1: WIKIPEDIA BROAD SEARCH (Acts like Google Images for education)
     try {
-        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(cleanQuery.substring(0, 50))}&prop=pageimages&format=json&pithumbsize=800`);
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrlimit=1&prop=pageimages&format=json&pithumbsize=800`;
+        const wikiRes = await fetch(searchUrl);
         const wikiData = await wikiRes.json();
-        const pages = wikiData.query.pages;
-        const pageId = Object.keys(pages)[0];
         
-        if (pageId !== "-1" && pages[pageId].thumbnail) {
-            console.log(`[Engine] Wikipedia Success: ${cleanQuery}`);
-            return pages[pageId].thumbnail.source;
+        if (wikiData.query && wikiData.query.pages) {
+            const pages = wikiData.query.pages;
+            const pageId = Object.keys(pages)[0];
+            if (pages[pageId].thumbnail) {
+                console.log(`[Engine] Wikipedia Broad Search Success: ${cleanQuery}`);
+                return pages[pageId].thumbnail.source;
+            }
         }
-    } catch(e) {}
+    } catch(e) { console.warn("Wikipedia Search Failed", e.message); }
 
-    // TIER 2: THE AI INFOGRAPHIC ENGINE (Upgraded for "Perfect" 3D Renders)
-    console.log(`[Engine] Generating Custom AI Diagram for: ${cleanQuery}`);
-    
-    let shortPrompt = cleanQuery.substring(0, 70).replace(/[^a-zA-Z0-9 ]/g, '');
+    // TIER 2: POLLINATIONS (Fallback)
+    let shortPrompt = cleanQuery.substring(0, 50).replace(/[^a-zA-Z0-9 ]/g, '');
     const randomSeed = Math.floor(Math.random() * 100000);
-    
-    // Upgraded modifiers to ensure premium, high-budget visuals that match a dark theme
-    const styleModifiers = "masterpiece, highly detailed educational 3D render, cinematic lighting, dark background, subtle glowing neon accents, 8k resolution, no text";
+    const styleModifiers = "educational diagram, dark background, 3d render";
     const safePrompt = encodeURIComponent(`${shortPrompt}, ${styleModifiers}`);
     
     return `https://image.pollinations.ai/prompt/${safePrompt}?width=800&height=400&nologo=true&seed=${randomSeed}`;
@@ -88,7 +87,7 @@ app.post('/api/explain-topic', async (req, res) => {
             
             CRITICAL TRANSLATION & AUDIO RULE: 
             1. Generate ALL subtitles and quiz questions strictly in the ${targetLanguage} language.
-            2. The "subtitle" field is read aloud. Write it EXACTLY as a human would speak. Do NOT use quotation marks, underscores, backticks, or camelCase. 
+            2. The "subtitle" field is read aloud. Write it EXACTLY as a human would speak. 
             
             SPECIAL RULE FOR CODE CORRECTION:
             If the user's topic involves fixing, debugging, or writing code:
@@ -102,7 +101,7 @@ app.post('/api/explain-topic', async (req, res) => {
             - academic_query: "${topic}"
             
             FOLLOWING SCENES (8-10 scenes total):
-            - YOU ARE THE ART DIRECTOR. YOU MUST STRONGLY PREFER SVGs (Use for 80-90% of scenes).
+            - YOU ARE THE ART DIRECTOR. YOU MUST STRONGLY PREFER SVGs (Use for 90% of scenes).
             
             - DIAGRAMS & TEXT ("svg"): Use this for ALMOST EVERYTHING. Explanations, bullet points, flowcharts, math, and concepts. 
               CRITICAL SVG RULES FOR DARK MODE:
@@ -112,8 +111,8 @@ app.post('/api/explain-topic', async (req, res) => {
               - PREVENT CUTOFF: Keep all shapes and text strictly inside the safe zone (x between 50 and 750, y between 50 and 350).
               - Text and shapes MUST NOT overlap.
               
-            - REALITY ("image"): USE SPARINGLY (1-2 times max per lesson). ONLY use when a complex real-world visual is strictly required (e.g., a galaxy, a historical artifact, biological tissue). 
-              - You MUST provide an 'academic_query' (Max 3 words, e.g., "Albert Einstein" or "DNA Double Helix"). DO NOT write long descriptive paragraphs.
+            - REALITY ("image"): USE EXTREMELY SPARINGLY (1 time max per lesson). ONLY use when a complex real-world visual is strictly required (e.g., a galaxy, a historical artifact). 
+              - You MUST provide an 'academic_query' (Max 3 words, e.g., "Albert Einstein" or "DNA Double Helix").
               
             - PROGRAMMING ("code"): Provide raw code snippet in 'media_data'.
             
@@ -125,7 +124,7 @@ app.post('/api/explain-topic', async (req, res) => {
                   "subtitle": "Spoken sentence translated to ${targetLanguage}.",
                   "media_type": "svg" or "image" or "code",
                   "media_data": "SVG code OR raw code snippet (Leave empty if media_type is image)",
-                  "academic_query": "Max 3 word noun for Wikipedia or AI Diagram (Leave empty if code/svg)"
+                  "academic_query": "Max 3 word noun for Wikipedia Search (Leave empty if code/svg)"
                 }
               ],
               "quiz": [{"q": "...", "o": ["...", "...", "...", "..."], "a": "..."}],
