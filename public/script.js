@@ -42,7 +42,6 @@ explainBtn.addEventListener('click', async () => {
     if (progressBar) progressBar.style.width = '0%';
     
     try {
-        // Switched to production Render URL
         const response = await fetch('https://clarity-ai-dejg.onrender.com/api/explain-topic', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -105,6 +104,9 @@ async function playCurrentScene() {
         return;
     }
 
+    // CRITICAL FIX: Stop old animations BEFORE creating new ones!
+    stopSpeech(); 
+
     let scene = clarityScenes[currentSceneIndex]; 
 
     if (currentSceneIndex === 0) {
@@ -161,14 +163,11 @@ async function playCurrentScene() {
         }
     }
 
-    stopSpeech(); 
-
     if (isPlaying) {
         await new Promise(async (resolve) => {
             window.currentSpeechResolve = resolve;
             
             try {
-                // Switched to production Render URL
                 const ttsResponse = await fetch('https://clarity-ai-dejg.onrender.com/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -413,7 +412,7 @@ function showTab(id) {
     }
 }
 
-// NEW: PDF Export Function
+// PDF Export Function
 function downloadNotes() {
     const element = document.getElementById('pdf-export-area');
     const opt = {
